@@ -2,8 +2,8 @@ const ejecucionesService = require('../services/ejecuciones.service');
 const asyncHandler = require('../utils/asyncHandler');
 
 const list = asyncHandler(async (req, res) => {
-  const { estado, ejecutorId } = req.query;
-  res.json({ data: ejecucionesService.list(req.params.cicloId, { estado, ejecutorId }) });
+  const { estado, ejecutorId, page, pageSize } = req.query;
+  res.json(ejecucionesService.list(req.params.cicloId, { estado, ejecutorId, page, pageSize }));
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -11,7 +11,8 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const listByCaso = asyncHandler(async (req, res) => {
-  res.json({ data: ejecucionesService.listByCaso(req.params.casoId) });
+  const { page, pageSize } = req.query;
+  res.json(ejecucionesService.listByCaso(req.params.casoId, { page, pageSize }));
 });
 
 const tomar = asyncHandler(async (req, res) => {

@@ -1,5 +1,6 @@
 const db = require('../db/connection');
 const { newId, now } = require('../utils/ids');
+const { parsePagination } = require('../utils/pagination');
 
 const toApi = (row) => ({
   id: row.id,
@@ -16,7 +17,7 @@ const findById = (id) => {
   return row ? toApi(row) : null;
 };
 
-const list = ({ estado } = {}) => {
+const list = ({ estado, page, pageSize } = {}) => {
   const clauses = [];
   const params = [];
   if (estado) {
@@ -24,8 +25,12 @@ const list = ({ estado } = {}) => {
     params.push(estado);
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const rows = db.prepare(`SELECT * FROM proyectos ${where} ORDER BY nombre`).all(...params);
-  return rows.map(toApi);
+  const { page: p, pageSize: ps, offset } = parsePagination({ page, pageSize });
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM proyectos ${where}`).get(...params).n;
+  const rows = db
+    .prepare(`SELECT * FROM proyectos ${where} ORDER BY nombre LIMIT ? OFFSET ?`)
+    .all(...params, ps, offset);
+  return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
 const create = ({ nombre, descripcion = null, propietarioId }) => {

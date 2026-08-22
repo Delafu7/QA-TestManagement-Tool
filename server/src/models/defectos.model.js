@@ -1,5 +1,6 @@
 const db = require('../db/connection');
 const { newId, now } = require('../utils/ids');
+const { parsePagination } = require('../utils/pagination');
 
 const toApi = (row) => ({
   id: row.id,
@@ -19,7 +20,7 @@ const findById = (id) => {
   return row ? toApi(row) : null;
 };
 
-const list = (proyectoId, { estado, severidad } = {}) => {
+const list = (proyectoId, { estado, severidad, page, pageSize } = {}) => {
   const clauses = ['proyecto_id = ?'];
   const params = [proyectoId];
   if (estado) {
@@ -30,10 +31,13 @@ const list = (proyectoId, { estado, severidad } = {}) => {
     clauses.push('severidad = ?');
     params.push(severidad);
   }
+  const where = clauses.join(' AND ');
+  const { page: p, pageSize: ps, offset } = parsePagination({ page, pageSize });
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM defectos WHERE ${where}`).get(...params).n;
   const rows = db
-    .prepare(`SELECT * FROM defectos WHERE ${clauses.join(' AND ')} ORDER BY creado_en DESC`)
-    .all(...params);
-  return rows.map(toApi);
+    .prepare(`SELECT * FROM defectos WHERE ${where} ORDER BY creado_en DESC LIMIT ? OFFSET ?`)
+    .all(...params, ps, offset);
+  return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
 const create = ({ proyectoId, ejecucionOrigenId = null, titulo, descripcion = null, severidad, reportadoPorId }) => {

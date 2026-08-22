@@ -1,7 +1,7 @@
 const etiquetasModel = require('../models/etiquetas.model');
 const { notFound, unprocessable } = require('../utils/errors');
 
-const listByProyecto = (proyectoId) => etiquetasModel.listByProyecto(proyectoId);
+const listByProyecto = (proyectoId, query) => etiquetasModel.listByProyecto(proyectoId, query);
 
 const create = ({ proyectoId, nombre, color }) => etiquetasModel.create({ proyectoId, nombre, color });
 

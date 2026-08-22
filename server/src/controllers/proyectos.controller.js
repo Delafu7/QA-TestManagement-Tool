@@ -3,7 +3,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { badRequest } = require('../utils/errors');
 
 const list = asyncHandler(async (req, res) => {
-  res.json({ data: proyectosService.list({ estado: req.query.estado }) });
+  const { estado, page, pageSize } = req.query;
+  res.json(proyectosService.list({ estado, page, pageSize }));
 });
 
 const getById = asyncHandler(async (req, res) => {

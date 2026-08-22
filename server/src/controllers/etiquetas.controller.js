@@ -3,7 +3,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { badRequest } = require('../utils/errors');
 
 const list = asyncHandler(async (req, res) => {
-  res.json({ data: etiquetasService.listByProyecto(req.params.proyectoId) });
+  const { page, pageSize } = req.query;
+  res.json(etiquetasService.listByProyecto(req.params.proyectoId, { page, pageSize }));
 });
 
 const create = asyncHandler(async (req, res) => {

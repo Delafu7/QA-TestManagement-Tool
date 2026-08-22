@@ -1,5 +1,6 @@
 const db = require('../db/connection');
 const { newId, now } = require('../utils/ids');
+const { parsePagination } = require('../utils/pagination');
 
 const toApi = (row) => ({
   id: row.id,
@@ -18,7 +19,7 @@ const findById = (id) => {
 
 const findByEmail = (email) => db.prepare('SELECT * FROM usuarios WHERE email = ?').get(email);
 
-const list = ({ rol } = {}) => {
+const list = ({ rol, page, pageSize } = {}) => {
   const clauses = [];
   const params = [];
   if (rol) {
@@ -26,8 +27,12 @@ const list = ({ rol } = {}) => {
     params.push(rol);
   }
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  const rows = db.prepare(`SELECT * FROM usuarios ${where} ORDER BY nombre`).all(...params);
-  return rows.map(toApi);
+  const { page: p, pageSize: ps, offset } = parsePagination({ page, pageSize });
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM usuarios ${where}`).get(...params).n;
+  const rows = db
+    .prepare(`SELECT * FROM usuarios ${where} ORDER BY nombre LIMIT ? OFFSET ?`)
+    .all(...params, ps, offset);
+  return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
 const create = ({ nombre, email, rol, avatarUrl = null }) => {

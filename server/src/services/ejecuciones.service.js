@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
 
 const list = (cicloId, query) => ejecucionesModel.list(cicloId, query);
 
-const listByCaso = (casoId) => ejecucionesModel.listByCaso(casoId);
+const listByCaso = (casoId, query) => ejecucionesModel.listByCaso(casoId, query);
 
 const getById = (id) => {
   const ejecucion = ejecucionesModel.findById(id);

@@ -1,5 +1,6 @@
 const db = require('../db/connection');
 const { newId, now } = require('../utils/ids');
+const { parsePagination } = require('../utils/pagination');
 
 const toApiBase = (row) => ({
   id: row.id,
@@ -37,7 +38,7 @@ const findById = (id) => {
 
 const findRawById = (id) => db.prepare('SELECT * FROM casos_prueba WHERE id = ?').get(id);
 
-const list = (suiteId, { estado, prioridad, tipo, etiqueta } = {}) => {
+const list = (suiteId, { estado, prioridad, tipo, etiqueta, page, pageSize } = {}) => {
   const clauses = ['suite_id = ?'];
   const params = [suiteId];
   if (estado) {
@@ -58,10 +59,13 @@ const list = (suiteId, { estado, prioridad, tipo, etiqueta } = {}) => {
     clauses.push('ce.etiqueta_id = ?');
     params.push(etiqueta);
   }
+  const where = clauses.join(' AND ');
+  const { page: p, pageSize: ps, offset } = parsePagination({ page, pageSize });
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM casos_prueba ${join} WHERE ${where}`).get(...params).n;
   const rows = db
-    .prepare(`SELECT casos_prueba.* FROM casos_prueba ${join} WHERE ${clauses.join(' AND ')} ORDER BY titulo`)
-    .all(...params);
-  return rows.map(toApi);
+    .prepare(`SELECT casos_prueba.* FROM casos_prueba ${join} WHERE ${where} ORDER BY titulo LIMIT ? OFFSET ?`)
+    .all(...params, ps, offset);
+  return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
 const replacePasos = (casoId, pasos) => {
