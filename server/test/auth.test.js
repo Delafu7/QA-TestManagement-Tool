@@ -39,14 +39,25 @@ test('PATCH /api/usuarios/:id sin X-User-Id devuelve 401 (regresión: antes no e
   assert.equal(res.status, 401);
 });
 
-test('PATCH /api/usuarios/:id con X-User-Id válido funciona', async () => {
+test('PATCH /api/usuarios/:id con un gestor autenticado funciona', async () => {
   const usuario = await crearUsuario('qa');
+  const gestor = await crearUsuario('gestor');
   const res = await testServer.request('PATCH', `/api/usuarios/${usuario.id}`, {
-    usuarioId: usuario.id,
+    usuarioId: gestor.id,
     body: { nombre: 'Nombre actualizado' },
   });
   assert.equal(res.status, 200);
   assert.equal(res.body.nombre, 'Nombre actualizado');
+});
+
+test('un qa no puede editar un usuario, ni siquiera a sí mismo (403, evita auto-promoción de rol)', async () => {
+  const usuario = await crearUsuario('qa');
+  const res = await testServer.request('PATCH', `/api/usuarios/${usuario.id}`, {
+    usuarioId: usuario.id,
+    body: { rol: 'gestor' },
+  });
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error.code, 'FORBIDDEN');
 });
 
 test('un gestor no puede crear un proyecto (403)', async () => {
