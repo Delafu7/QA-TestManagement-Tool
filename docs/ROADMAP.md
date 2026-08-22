@@ -10,9 +10,9 @@ The [docs/design/](design/) documents were written before implementation and are
 
 | Gap | Design said | Code does | Suggested resolution |
 |---|---|---|---|
-| List pagination | Every list endpoint returns `{ data, pagination: { page, pageSize, total } }` ([design §03](design/03-api-contract.md)) | Every list endpoint returns `{ data }` with no pagination — the full result set is always returned | Low urgency while data volume is small (see [design §17](design/08-decisiones.md) assumption of "hundreds of cases, thousands of executions/year"); becomes a real problem once a project's case/execution count grows. Track as a backlog item (§3). |
-| Role-based authorization (`requireRole`) | `[[04-ui-ux]]` implies QA vs. `gestor` have different edit permissions, and `server/src/middleware/auth.middleware.js` exports a `requireRole(...roles)` helper for exactly this | `requireRole` is defined but **not applied to any route** — any authenticated user (`qa` or `gestor`) can currently call every mutating endpoint | Decide the actual permission matrix (which actions are QA-only vs. manager-only) and wire `requireRole` into the relevant routes, or remove the unused helper if role gating turns out to be UI-only by design. |
 | Dark mode | Marked `[verify]`/not implemented by default ([design §05](design/05-responsive-y-design-system.md) §5.2) | `client/src/styles/tokens.css` already defines a `[data-theme='dark']` token set and follows `prefers-color-scheme` automatically | Functionally further along than the design doc suggests, but there's no in-app manual toggle — it only follows OS preference. Decide if a manual toggle is wanted (§3). |
+
+**Closed:** role-based authorization (`requireRole`) was wired in across every mutating route in August 2026 — `gestor` is now server-side read-only except export, matching `[[04-ui-ux]]` §1. List pagination now matches the design contract exactly (`{ data, pagination: { page, pageSize, total } }`, defaults 1/20, max 100) on every flat list endpoint; the client auto-pages transparently so existing screens keep showing complete lists without their own pagination UI. See [docs/AUDIT.md](AUDIT.md) for the audit that flagged both and the fixes applied alongside them (an unauthenticated user-role-escalation hole, an FK crash on editing executed test cases, a silently-discarded `ciclo` block comment, and two more FK-crash bugs the new backend test suite turned up independently — deleting a caso or a suite could 500).
 
 ## 2. Explicitly out of scope (carried over, still valid)
 
@@ -32,12 +32,10 @@ Rough sizing: **S** = a few hours, **M** = a few days, **L** = a significant ite
 
 | Item | Why | Size |
 |---|---|---|
-| Wire up `requireRole` / decide the real QA-vs-manager permission matrix | Currently any active user can perform any mutating action regardless of role; the middleware exists but is unused (§1) | S |
 | Automated backups for the SQLite volume | Zero backup today — losing the `sqlite-data` Docker volume means losing all history (see [docs/DEPLOYMENT.md](DEPLOYMENT.md#backups)) | S |
-| Real backend test suite (unit + integration) | `npm test` is a single smoke test (`server/scripts/smoke-test.js`) hitting 2 endpoints; state-machine transitions, integrity rules, and export logic have no automated coverage | M |
 | Frontend test suite | No component/interaction tests exist at all today | M |
-| List pagination | See gap in §1 — needed before case/execution counts grow meaningfully | S |
-| Rate limiting / basic abuse protection on the API | Nothing currently throttles repeated requests, which matters more once the app leaves a fully trusted network | S |
+
+**Closed:** `requireRole`/permission matrix (see §1 note above); a real backend test suite — `npm test` now runs `server/test/*.test.js` (`node:test`, unit + integration) covering state-machine transitions, integrity rules, auth/role gating, and export logic (JSON/Markdown + a mocked Notion client), replacing the old two-endpoint smoke test; list pagination on every flat list endpoint (see §1 note above), with the client updated to auto-page transparently rather than silently truncating; and basic rate limiting (`RATE_LIMIT_WINDOW_MS`/`RATE_LIMIT_MAX`, default 300 req/min per client IP) on all of `/api/*`.
 
 ### Medium priority — clear product value, not yet designed
 
@@ -79,4 +77,4 @@ Carried from [design §08 §14](design/08-decisiones.md#14-preguntas-abiertas-pe
 
 ## 5. Suggested next iteration
 
-If picking a single next slice of work, the security/reliability items in §3's "High priority" table are the most load-bearing — they don't add new user-facing surface area, but they close real gaps in what's already shipped (an unused permission system, no backups, near-zero automated test coverage). Everything in "Medium priority" is genuinely useful but additive, and can be sequenced independently once the high-priority items are closed out.
+If picking a single next slice of work, the remaining items in §3's "High priority" table are the most load-bearing — they don't add new user-facing surface area, but they close real gaps in what's already shipped (no backups, no frontend test coverage). Everything in "Medium priority" is genuinely useful but additive, and can be sequenced independently once the high-priority items are closed out.

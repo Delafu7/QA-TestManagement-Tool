@@ -11,7 +11,7 @@ npm run dev      # node --watch src/server.js, http://localhost:4000
 
 ```bash
 npm run seed      # populate an empty DB with realistic sample data
-npm test           # runs scripts/smoke-test.js
+npm test           # runs the test/ suite (node:test) against an in-memory SQLite DB
 ```
 
 Environment variables (`PORT`, `SQLITE_DB_PATH`, `LOG_FILE_PATH`, `NOTION_API_BASE_URL`) are documented in [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md#environment-variables).
@@ -27,6 +27,7 @@ Environment variables (`PORT`, `SQLITE_DB_PATH`, `LOG_FILE_PATH`, `NOTION_API_BA
 | `src/middleware/` | Auth (`X-User-Id`), request logging, error handling |
 | `src/integrations/` | Outbound Notion API client |
 | `src/db/` | `schema.sql` + connection setup |
-| `scripts/` | `seed.js`, `smoke-test.js` |
+| `scripts/` | `seed.js` |
+| `test/` | `node:test` suite (unit + integration) — see `test/helpers/` for the shared test server and fixtures |
 
 Full architecture, API reference, and data model docs live in [`/docs`](../docs) at the repo root.

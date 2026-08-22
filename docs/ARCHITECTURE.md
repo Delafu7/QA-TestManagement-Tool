@@ -98,8 +98,10 @@ server/src/
 ├── app.js             # Express app wiring (no listen())
 └── server.js           # entry point — app.listen()
 server/scripts/
-├── seed.js            # populates an empty DB with realistic sample data
-└── smoke-test.js       # boots the app in-process and hits a couple of endpoints (used by CI)
+└── seed.js            # populates an empty DB with realistic sample data
+server/test/
+├── helpers/            # shared test server (ephemeral port, in-memory SQLite) + fixtures
+└── *.test.js           # node:test suite: state machines, integrity rules, auth/roles, export (used by CI)
 ```
 
 ## 6. Responsibilities by layer

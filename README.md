@@ -115,7 +115,8 @@ QA-TestManagement-Tool/
 │       ├── middleware/      # auth, logging, error handling
 │       ├── integrations/    # Notion API client
 │       └── db/               # schema.sql + connection
-│   └── scripts/             # seed.js, smoke-test.js
+│   ├── scripts/              # seed.js
+│   └── test/                 # node:test suite (unit + integration)
 ├── logstash/                # Logstash pipeline + config for the ELK stack
 ├── docs/                    # documentation (this set, in English)
 │   └── design/               # original Spanish-language design specs (pre-implementation)

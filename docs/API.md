@@ -8,13 +8,15 @@ REST API served under `/api`, JSON in and out. This document reflects the routes
 - **Content type:** `application/json` for requests with a body; `text/markdown` for the Markdown export.
 - **Dates:** ISO 8601 UTC for datetimes (`2026-08-21T09:15:00Z`); plain `YYYY-MM-DD` for cycle start/end dates.
 - **Authentication header:** every route except `POST /api/usuarios`, `GET /api/usuarios`, and `/health` requires `X-User-Id: <user id>` (see [Authentication](#authentication)).
-- **List responses** are wrapped:
+- **List responses** are wrapped and paginated:
 
   ```json
-  { "data": [ /* resources */ ] }
+  { "data": [ /* resources */ ], "pagination": { "page": 1, "pageSize": 20, "total": 137 } }
   ```
 
-  (Cursor/offset pagination described in the original design docs is **not implemented** — see [docs/ROADMAP.md](ROADMAP.md).)
+  Query params `page` (default `1`) and `pageSize` (default `20`, max `100`) apply to every list endpoint below except the suites tree (`GET /api/proyectos/:proyectoId/suites`, which returns a nested hierarchy, not a flat page). Missing or non-numeric values fall back to the defaults rather than returning `400`.
+
+- **Rate limiting:** every `/api/*` route (including the unauthenticated `usuarios` bootstrap ones) is limited to `RATE_LIMIT_MAX` requests (default `300`) per `RATE_LIMIT_WINDOW_MS` (default `60000`ms) per client IP. Exceeding it returns `429` with `{ "error": { "code": "RATE_LIMITED", ... } }`.
 
 ## Authentication
 

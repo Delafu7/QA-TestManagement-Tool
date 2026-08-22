@@ -25,6 +25,8 @@ Listens on `http://localhost:4000` by default (`PORT`). By default it stores its
 | `SQLITE_DB_PATH` | `server/data/qa-tool.sqlite` | SQLite file location |
 | `LOG_FILE_PATH` | `server/logs/server.ndjson` | NDJSON log file location |
 | `NOTION_API_BASE_URL` | `https://api.notion.com/v1` | Override for testing against a Notion API mock |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate-limiting window, in ms, for `/api/*` |
+| `RATE_LIMIT_MAX` | `300` | Max requests per client IP per window before a `429` |
 
 No `.env` file is read automatically — export these in your shell or prefix the command, e.g. `PORT=4100 npm run dev`.
 
@@ -41,10 +43,10 @@ Populates: 3 users (2 `qa`, 1 `gestor`), 1 project, suites, tags, tagged test ca
 
 ```bash
 cd server
-npm test    # runs scripts/smoke-test.js
+npm test    # runs the test/ suite (node:test) via node --test test/*.test.js
 ```
 
-This is a smoke test, not a unit/integration suite: it boots the Express app in-process against a temp SQLite file, then checks `GET /health`, `POST /api/usuarios`, and that unauthenticated requests to a protected route return `401`. See [docs/ROADMAP.md](ROADMAP.md) for the gap in real test coverage.
+Each `test/*.test.js` file boots the Express app in-process against its own in-memory SQLite database (`node --test` isolates each file in its own process, so this is safe) and exercises it over real HTTP with the built-in `fetch`. Coverage includes: state-machine transitions and integrity rules for casos/suites/ciclos/ejecuciones/defectos, the `X-User-Id` auth and `requireRole` gating, the Notion export client's retry/backoff and systemic-vs-per-item error handling (against a local fake HTTP server, not the real Notion API), and JSON/Markdown export shape. See `server/test/helpers/` for the shared test server and fixture builders.
 
 ## Running the frontend
 
@@ -65,7 +67,7 @@ npm run lint         # oxlint
 ## Linting & CI
 
 - Client: `oxlint` (`client/.oxlintrc.json`).
-- Server: no linter configured; CI runs `node --check src/app.js` (syntax check) plus the smoke test.
+- Server: no linter configured; CI runs `node --check src/app.js` (syntax check) plus the `test/` suite.
 - `.github/workflows/ci.yml` runs three jobs on every push/PR to `master`/`main`: backend (`npm ci` → syntax check → `npm test`), frontend (`npm ci` → `npm run lint` → `npm run build`), and a Docker build check (`docker compose config`, then builds both images).
 
 Run the same checks locally before pushing:
