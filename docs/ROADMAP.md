@@ -32,10 +32,9 @@ Rough sizing: **S** = a few hours, **M** = a few days, **L** = a significant ite
 
 | Item | Why | Size |
 |---|---|---|
-| Automated backups for the SQLite volume | Zero backup today — losing the `sqlite-data` Docker volume means losing all history (see [docs/DEPLOYMENT.md](DEPLOYMENT.md#backups)) | S |
 | Frontend test suite | No component/interaction tests exist at all today | M |
 
-**Closed:** `requireRole`/permission matrix (see §1 note above); a real backend test suite — `npm test` now runs `server/test/*.test.js` (`node:test`, unit + integration) covering state-machine transitions, integrity rules, auth/role gating, and export logic (JSON/Markdown + a mocked Notion client), replacing the old two-endpoint smoke test; list pagination on every flat list endpoint (see §1 note above), with the client updated to auto-page transparently rather than silently truncating; and basic rate limiting (`RATE_LIMIT_WINDOW_MS`/`RATE_LIMIT_MAX`, default 300 req/min per client IP) on all of `/api/*`.
+**Closed:** `requireRole`/permission matrix (see §1 note above); a real backend test suite — `npm test` now runs `server/test/*.test.js` (`node:test`, unit + integration) covering state-machine transitions, integrity rules, auth/role gating, and export logic (JSON/Markdown + a mocked Notion client), replacing the old two-endpoint smoke test; list pagination on every flat list endpoint (see §1 note above), with the client updated to auto-page transparently rather than silently truncating; basic rate limiting (`RATE_LIMIT_WINDOW_MS`/`RATE_LIMIT_MAX`, default 300 req/min per client IP) on all of `/api/*`; and automated backups for the SQLite volume — `scripts/backup.sh` takes a hot backup via `server/scripts/backup.js` (`better-sqlite3`'s online backup API), writes it to `./backups/` on the host (outside the `sqlite-data` volume), keeps the 7 most recent, and is meant to be scheduled with a daily host crontab entry (see [docs/DEPLOYMENT.md#backups](DEPLOYMENT.md#backups)). Offsite replication and one-click restore remain deliberately out of scope.
 
 ### Medium priority — clear product value, not yet designed
 
@@ -77,4 +76,4 @@ Carried from [design §08 §14](design/08-decisiones.md#14-preguntas-abiertas-pe
 
 ## 5. Suggested next iteration
 
-If picking a single next slice of work, the remaining items in §3's "High priority" table are the most load-bearing — they don't add new user-facing surface area, but they close real gaps in what's already shipped (no backups, no frontend test coverage). Everything in "Medium priority" is genuinely useful but additive, and can be sequenced independently once the high-priority items are closed out.
+If picking a single next slice of work, the remaining item in §3's "High priority" table — a frontend test suite — is the most load-bearing: it doesn't add new user-facing surface area, but it closes a real gap in what's already shipped (no component/interaction test coverage on the client). Everything in "Medium priority" is genuinely useful but additive, and can be sequenced independently once it's closed out.

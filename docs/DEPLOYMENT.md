@@ -71,19 +71,33 @@ A single rolling index pattern (`qa-tool-logs-*`) is used, with `tipo` (`http_re
 
 ## Backups
 
-There is **no automated backup job**. The `sqlite-data` volume holds all business data (projects, cases, executions, defects) with nothing else backing it up. Recommended manual approach until a backup job exists (see [docs/ROADMAP.md](ROADMAP.md)):
+`./scripts/backup.sh` takes a hot backup of the running `server` container's SQLite database (safe with writes in flight — it uses `better-sqlite3`'s online backup API via `server/scripts/backup.js`, not a raw file copy, see [docs/design/08-decisiones.md §15](design/08-decisiones.md#15-estrategia-de-backup-del-archivo-sqlite)) and writes the result to `./backups/` on the host — **outside** the `sqlite-data` Docker volume, so an accidental `docker volume rm sqlite-data` doesn't destroy the backups too.
 
 ```bash
-# hot backup without stopping the server (uses SQLite's own backup API)
-docker compose exec server node -e "
-  const Database = require('better-sqlite3');
-  const db = new Database(process.env.SQLITE_DB_PATH);
-  db.backup('/data/backup-' + new Date().toISOString().slice(0,10) + '.sqlite')
-    .then(() => process.exit(0));
-"
+./scripts/backup.sh
+# → Backup guardado en ./backups/qa-tool-<UTC timestamp>.sqlite
 ```
 
-Or simply copy the `.sqlite` file while confident no write is in flight. Losing the `sqlite-data` volume (e.g. an accidental `docker volume rm`) means losing the entire case/execution/defect history — there is no offsite copy by default.
+**Retention:** the script keeps the **7 most recent** backups in `./backups/` and deletes older ones on every run. Override with `BACKUP_RETENTION=<n>` and the destination with `BACKUP_DIR=<path>` if needed.
+
+**Scheduling:** not run automatically by `docker-compose.yml` — schedule it with a daily entry in the host's crontab:
+
+```cron
+0 3 * * * cd /path/to/app && ./scripts/backup.sh >> /var/log/qa-tool-backup.log 2>&1
+```
+
+**Failures** (e.g. no disk space, database unreachable) are logged as an `app_error` NDJSON line (`errorCode: "BACKUP_FAILED"`) in the same log stream as the rest of the application (see "Logging & the ELK pipeline" above), so they show up in Kibana like any other error.
+
+**Restore:**
+
+```bash
+# server must be stopped first — better-sqlite3 doesn't support hot-swapping the open file
+docker compose stop server
+docker compose cp ./backups/qa-tool-<timestamp>.sqlite server:/data/qa-tool.sqlite
+docker compose start server
+```
+
+There is no offsite copy — `./backups/` is local to the Docker host. If the host itself is lost, so are the backups; treat this as covering "accidental volume/container loss," not "hardware loss." Offsite replication and one-click restore are tracked as open follow-ups in [docs/ROADMAP.md](ROADMAP.md) if ever needed.
 
 ## Production readiness checklist
 
@@ -91,8 +105,7 @@ Before running this anywhere beyond a trusted local network, review:
 
 - [ ] No real authentication — see [docs/ARCHITECTURE.md#authentication-model](ARCHITECTURE.md#authentication-model)
 - [ ] No TLS anywhere in the stack (client↔server, or within ELK)
-- [ ] No automated backups
-- [ ] No rate limiting / abuse protection on the API
+- [ ] Backups are local-only (see "Backups" above) — no offsite copy
 - [ ] SQLite has no encryption at rest
 
-All five are tracked in [docs/ROADMAP.md](ROADMAP.md).
+Rate limiting is in place (`RATE_LIMIT_WINDOW_MS`/`RATE_LIMIT_MAX` env vars, default 300 req/min per client IP). The remaining items are tracked in [docs/ROADMAP.md](ROADMAP.md).
