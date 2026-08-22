@@ -1,20 +1,24 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
+import TagPicker from '../../components/TagPicker';
 import { casosApi } from '../../api/casosApi';
 import { useUsuario } from '../../context/UsuarioContext';
 import { IconPlus, IconClose } from '../../components/icons';
 
 const PASO_VACIO = () => ({ accion: '', resultadoEsperado: '' });
 
-export default function CasoFormModal({ suites, onClose, onCreado }) {
+export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCreado, onGuardado }) {
   const { usuario } = useUsuario();
-  const [suiteId, setSuiteId] = useState(suites[0]?.id || '');
-  const [titulo, setTitulo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [precondiciones, setPrecondiciones] = useState('');
-  const [prioridad, setPrioridad] = useState('media');
-  const [tipo, setTipo] = useState('funcional');
-  const [pasos, setPasos] = useState([PASO_VACIO()]);
+  const editando = Boolean(caso);
+  const suiteActual = suites.find((s) => s.id === caso?.suiteId);
+  const [suiteId, setSuiteId] = useState(caso?.suiteId || suites[0]?.id || '');
+  const [titulo, setTitulo] = useState(caso?.titulo || '');
+  const [descripcion, setDescripcion] = useState(caso?.descripcion || '');
+  const [precondiciones, setPrecondiciones] = useState(caso?.precondiciones || '');
+  const [prioridad, setPrioridad] = useState(caso?.prioridad || 'media');
+  const [tipo, setTipo] = useState(caso?.tipo || 'funcional');
+  const [pasos, setPasos] = useState(caso?.pasos?.length ? caso.pasos.map((p) => ({ accion: p.accion, resultadoEsperado: p.resultadoEsperado })) : [PASO_VACIO()]);
+  const [etiquetaIds, setEtiquetaIds] = useState(caso?.etiquetaIds || []);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -32,17 +36,32 @@ export default function CasoFormModal({ suites, onClose, onCreado }) {
     e.preventDefault();
     setGuardando(true);
     setError(null);
+    const pasosPayload = pasos.map((p, i) => ({ orden: i + 1, accion: p.accion, resultadoEsperado: p.resultadoEsperado }));
     try {
-      const nuevo = await casosApi.create(suiteId, {
-        titulo,
-        descripcion,
-        precondiciones,
-        prioridad,
-        tipo,
-        autorId: usuario.id,
-        pasos: pasos.map((p, i) => ({ orden: i + 1, accion: p.accion, resultadoEsperado: p.resultadoEsperado })),
-      });
-      onCreado(nuevo);
+      if (editando) {
+        const actualizado = await casosApi.update(caso.id, {
+          titulo,
+          descripcion,
+          precondiciones,
+          prioridad,
+          tipo,
+          etiquetaIds,
+          pasos: pasosPayload,
+        });
+        onGuardado(actualizado);
+      } else {
+        const nuevo = await casosApi.create(suiteId, {
+          titulo,
+          descripcion,
+          precondiciones,
+          prioridad,
+          tipo,
+          etiquetaIds,
+          autorId: usuario.id,
+          pasos: pasosPayload,
+        });
+        onCreado(nuevo);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,16 +70,20 @@ export default function CasoFormModal({ suites, onClose, onCreado }) {
   }
 
   return (
-    <Modal title="Nuevo caso de prueba" onClose={onClose} width={560}>
+    <Modal title={editando ? 'Editar caso de prueba' : 'Nuevo caso de prueba'} onClose={onClose} width={560}>
       {error && <div className="alert alert-error">{error}</div>}
       <form onSubmit={submit}>
         <div className="field">
           <label htmlFor="c-suite">Suite</label>
-          <select id="c-suite" value={suiteId} onChange={(e) => setSuiteId(e.target.value)} required>
-            {suites.map((s) => (
-              <option key={s.id} value={s.id}>{s.nombre}</option>
-            ))}
-          </select>
+          {editando ? (
+            <input id="c-suite" value={suiteActual?.nombre || ''} disabled />
+          ) : (
+            <select id="c-suite" value={suiteId} onChange={(e) => setSuiteId(e.target.value)} required>
+              {suites.map((s) => (
+                <option key={s.id} value={s.id}>{s.nombre}</option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="field">
           <label htmlFor="c-titulo">Título</label>
@@ -118,10 +141,12 @@ export default function CasoFormModal({ suites, onClose, onCreado }) {
           </button>
         </div>
 
+        <TagPicker proyectoId={proyectoId} selectedIds={etiquetaIds} onChange={setEtiquetaIds} />
+
         <div style={{ display: 'flex', gap: 8, marginTop: 'var(--space-2)' }}>
           <button type="button" className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={guardando || !suiteId}>
-            {guardando ? 'Creando…' : 'Crear caso'}
+            {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear caso'}
           </button>
         </div>
       </form>

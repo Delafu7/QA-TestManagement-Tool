@@ -7,6 +7,7 @@ export const ejecucionesApi = {
     return api.get(`/ciclos/${cicloId}/ejecuciones${qs ? `?${qs}` : ''}`);
   },
   getById: (id) => api.get(`/ejecuciones/${id}`),
+  listByCaso: (casoId) => api.get(`/casos/${casoId}/ejecuciones`),
   tomar: (id) => api.patch(`/ejecuciones/${id}/tomar`),
   registrarResultado: (id, data) => api.patch(`/ejecuciones/${id}/resultado`, data),
   reintentar: (id) => api.patch(`/ejecuciones/${id}/reintentar`),

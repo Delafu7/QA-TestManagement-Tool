@@ -3,6 +3,7 @@ import { useProyecto } from '../../context/ProyectoContext';
 import { useUsuario } from '../../context/UsuarioContext';
 import { suitesApi } from '../../api/suitesApi';
 import { casosApi } from '../../api/casosApi';
+import { etiquetasApi } from '../../api/etiquetasApi';
 import { flattenSuites } from '../../utils/suites';
 import EstadoBadge from '../../components/EstadoBadge';
 import { IconPlus, IconSearch } from '../../components/icons';
@@ -21,12 +22,14 @@ export default function CasosListado() {
 
   const [suites, setSuites] = useState(null);
   const [casos, setCasos] = useState(null);
+  const [etiquetas, setEtiquetas] = useState(null);
   const [error, setError] = useState(null);
 
   const [filtroSuite, setFiltroSuite] = useState('');
   const [filtroPrioridad, setFiltroPrioridad] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEtiqueta, setFiltroEtiqueta] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
   const [seleccion, setSeleccion] = useState(new Set());
@@ -38,9 +41,13 @@ export default function CasosListado() {
     if (!proyectoId) return;
     setError(null);
     try {
-      const { data } = await suitesApi.tree(proyectoId);
-      setSuites(data);
-      const flat = flattenSuites(data);
+      const [{ data: suitesData }, { data: etiquetasData }] = await Promise.all([
+        suitesApi.tree(proyectoId),
+        etiquetasApi.list(proyectoId),
+      ]);
+      setSuites(suitesData);
+      setEtiquetas(etiquetasData);
+      const flat = flattenSuites(suitesData);
       if (flat.length === 0) {
         setCasos([]);
         return;
@@ -64,6 +71,7 @@ export default function CasosListado() {
     if (filtroPrioridad && c.prioridad !== filtroPrioridad) return false;
     if (filtroTipo && c.tipo !== filtroTipo) return false;
     if (filtroEstado && c.estado !== filtroEstado) return false;
+    if (filtroEtiqueta && !c.etiquetaIds?.includes(filtroEtiqueta)) return false;
     if (busqueda && !c.titulo.toLowerCase().includes(busqueda.toLowerCase())) return false;
     return true;
   });
@@ -141,6 +149,12 @@ export default function CasosListado() {
               <option value="activo">Activo</option>
               <option value="obsoleto">Obsoleto</option>
             </select>
+            {etiquetas?.length > 0 && (
+              <select className="chip" value={filtroEtiqueta} onChange={(e) => setFiltroEtiqueta(e.target.value)}>
+                <option value="">Etiqueta: todas</option>
+                {etiquetas.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+              </select>
+            )}
             <div style={{ flex: 1 }} />
             <div className="search-box">
               <IconSearch />
@@ -174,7 +188,22 @@ export default function CasosListado() {
                         <input type="checkbox" checked={seleccion.has(c.id)} onChange={() => toggleSeleccion(c.id)} />
                       </td>
                     )}
-                    <td style={{ fontWeight: 500 }}>{c.titulo}</td>
+                    <td>
+                      <div style={{ fontWeight: 500 }}>{c.titulo}</div>
+                      {c.etiquetaIds?.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                          {c.etiquetaIds.map((id) => {
+                            const t = etiquetas?.find((et) => et.id === id);
+                            if (!t) return null;
+                            return (
+                              <span key={id} className="badge" style={{ background: t.color + '22', color: t.color, padding: '2px 7px', fontSize: 10.5 }}>
+                                {t.nombre}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ color: 'var(--text-2)' }}>{c.suiteNombre}</td>
                     <td>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
@@ -209,6 +238,7 @@ export default function CasosListado() {
 
       {modal === 'crearCaso' && (
         <CasoFormModal
+          proyectoId={proyectoId}
           suites={suitesFlat}
           onClose={() => setModal(null)}
           onCreado={async () => { await cargarSuitesYCasos(); setModal(null); }}
@@ -218,6 +248,8 @@ export default function CasosListado() {
       {modal && typeof modal === 'object' && modal.casoId && (
         <CasoDetalleModal
           casoId={modal.casoId}
+          proyectoId={proyectoId}
+          suites={suitesFlat}
           onClose={() => setModal(null)}
           onCambiado={cargarSuitesYCasos}
         />
