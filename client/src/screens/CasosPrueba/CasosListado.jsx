@@ -9,6 +9,7 @@ import EstadoBadge from '../../components/EstadoBadge';
 import { IconPlus, IconSearch } from '../../components/icons';
 import CrearProyectoModal from '../../components/CrearProyectoModal';
 import CrearSuiteModal from '../../components/CrearSuiteModal';
+import GestionarSuitesModal from '../../components/GestionarSuitesModal';
 import CasoFormModal from './CasoFormModal';
 import CasoDetalleModal from './CasoDetalleModal';
 import AsignarCicloModal from './AsignarCicloModal';
@@ -107,10 +108,13 @@ export default function CasosListado() {
           <div className="page-subtitle">{proyectoActual.nombre} &middot; {casos?.length ?? 0} casos</div>
         </div>
         {isQa && suitesFlat.length > 0 && (
-          <button className="btn btn-primary" onClick={() => setModal('crearCaso')}>
-            <IconPlus size={15} color="white" />
-            Nuevo caso
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={() => setModal('gestionarSuites')}>Gestionar suites</button>
+            <button className="btn btn-primary" onClick={() => setModal('crearCaso')}>
+              <IconPlus size={15} color="white" />
+              Nuevo caso
+            </button>
+          </div>
         )}
       </div>
 
@@ -233,6 +237,14 @@ export default function CasosListado() {
           suites={suitesFlat}
           onClose={() => setModal(null)}
           onCreada={async () => { await cargarSuitesYCasos(); setModal(null); }}
+        />
+      )}
+
+      {modal === 'gestionarSuites' && (
+        <GestionarSuitesModal
+          proyectoId={proyectoId}
+          onClose={() => setModal(null)}
+          onCambiado={cargarSuitesYCasos}
         />
       )}
 
