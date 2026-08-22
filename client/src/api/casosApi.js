@@ -7,7 +7,7 @@ const toQuery = (params) => {
 };
 
 export const casosApi = {
-  list: (suiteId, filtros) => api.get(`/suites/${suiteId}/casos${toQuery(filtros)}`),
+  list: (suiteId, filtros) => api.getAll(`/suites/${suiteId}/casos${toQuery(filtros)}`),
   getById: (id) => api.get(`/casos/${id}`),
   create: (suiteId, data) => api.post(`/suites/${suiteId}/casos`, data),
   update: (id, data) => api.patch(`/casos/${id}`, data),

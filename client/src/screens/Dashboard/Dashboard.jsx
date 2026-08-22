@@ -46,8 +46,8 @@ export default function Dashboard() {
     [cicloActivoResumen?.id]
   );
 
-  const { data: defectosAbiertos, refetch: recargarDefectosAbiertos } = useFetch(
-    () => (proyectoId ? defectosApi.list(proyectoId, { estado: 'abierto' }) : Promise.resolve({ data: [] })),
+  const { data: totalDefectosAbiertos, refetch: recargarDefectosAbiertos } = useFetch(
+    () => (proyectoId ? defectosApi.count(proyectoId, { estado: 'abierto' }) : Promise.resolve(0)),
     [proyectoId]
   );
 
@@ -96,7 +96,7 @@ export default function Dashboard() {
         <Kpi label="Ciclos activos" value={proyectoDetalle?.ciclosActivos ?? '—'} Icon={IconLayers} color="var(--primary)" bg="var(--primary-tint)" />
         <Kpi label="Casos activos" value={proyectoDetalle?.totalCasos ?? '—'} Icon={IconCheck} color="var(--pass)" bg="var(--pass-bg)" />
         <Kpi label="Tasa de éxito" value={tasaExito} Icon={IconTrend} color="var(--pend)" bg="var(--pend-bg)" />
-        <Kpi label="Defectos abiertos" value={defectosAbiertos?.data.length ?? '—'} Icon={IconBug} color="var(--fail)" bg="var(--fail-bg)" />
+        <Kpi label="Defectos abiertos" value={totalDefectosAbiertos ?? '—'} Icon={IconBug} color="var(--fail)" bg="var(--fail-bg)" />
       </div>
 
       {cicloActivo && (
