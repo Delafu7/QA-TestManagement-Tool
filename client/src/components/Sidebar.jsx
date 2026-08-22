@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { IconHome, IconList, IconLayers, IconDownload, IconChevronDown } from './icons';
+import { IconHome, IconList, IconLayers, IconDownload, IconChevronDown, IconSettings } from './icons';
 import { useUsuario } from '../context/UsuarioContext';
 import { useProyecto } from '../context/ProyectoContext';
+import AjustesProyectoModal from './AjustesProyectoModal';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', Icon: IconHome, end: true },
@@ -21,7 +23,9 @@ function initials(nombre) {
 
 export default function Sidebar() {
   const { usuario, cerrarSesion } = useUsuario();
-  const { proyectos, proyectoId, seleccionarProyecto } = useProyecto();
+  const { proyectos, proyectoId, proyectoActual, seleccionarProyecto, recargar } = useProyecto();
+  const [ajustesAbiertos, setAjustesAbiertos] = useState(false);
+  const isQa = usuario?.rol === 'qa';
 
   return (
     <aside className="sidebar">
@@ -35,24 +39,46 @@ export default function Sidebar() {
 
       <div className="sidebar__project">
         <div className="sidebar__section-label">Proyecto</div>
-        <div style={{ position: 'relative' }}>
-          <select
-            className="project-select"
-            value={proyectoId || ''}
-            onChange={(e) => seleccionarProyecto(e.target.value)}
-            aria-label="Proyecto activo"
-          >
-            {proyectos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
-          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <IconChevronDown color="var(--text-2)" />
-          </span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <select
+              className="project-select"
+              value={proyectoId || ''}
+              onChange={(e) => seleccionarProyecto(e.target.value)}
+              aria-label="Proyecto activo"
+            >
+              {proyectos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <IconChevronDown color="var(--text-2)" />
+            </span>
+          </div>
+          {isQa && proyectoActual && (
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="Ajustes del proyecto"
+              title="Ajustes del proyecto"
+              onClick={() => setAjustesAbiertos(true)}
+            >
+              <IconSettings size={15} />
+            </button>
+          )}
         </div>
       </div>
+
+      {ajustesAbiertos && proyectoActual && (
+        <AjustesProyectoModal
+          proyecto={proyectoActual}
+          onClose={() => setAjustesAbiertos(false)}
+          onGuardado={async () => { await recargar(); setAjustesAbiertos(false); }}
+          onArchivado={async () => { await recargar(); setAjustesAbiertos(false); }}
+        />
+      )}
 
       <nav className="sidebar__nav">
         {NAV_ITEMS.map(({ to, label, Icon, end }) => (
