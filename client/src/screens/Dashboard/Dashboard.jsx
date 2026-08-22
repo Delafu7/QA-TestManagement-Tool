@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProyecto } from '../../context/ProyectoContext';
 import { useUsuario } from '../../context/UsuarioContext';
@@ -6,6 +7,7 @@ import { proyectosApi } from '../../api/proyectosApi';
 import { ciclosApi } from '../../api/ciclosApi';
 import { defectosApi } from '../../api/defectosApi';
 import EstadoBadge from '../../components/EstadoBadge';
+import DefectoDetalleModal from '../../components/DefectoDetalleModal';
 import { IconLayers, IconCheck, IconTrend, IconBug, IconPlus, IconDownload } from '../../components/icons';
 
 function Kpi({ label, value, Icon, color, bg }) {
@@ -44,15 +46,17 @@ export default function Dashboard() {
     [cicloActivoResumen?.id]
   );
 
-  const { data: defectosAbiertos } = useFetch(
+  const { data: defectosAbiertos, refetch: recargarDefectosAbiertos } = useFetch(
     () => (proyectoId ? defectosApi.list(proyectoId, { estado: 'abierto' }) : Promise.resolve({ data: [] })),
     [proyectoId]
   );
 
-  const { data: defectosRecientes } = useFetch(
+  const { data: defectosRecientes, refetch: recargarDefectos } = useFetch(
     () => (proyectoId ? defectosApi.list(proyectoId) : Promise.resolve({ data: [] })),
     [proyectoId]
   );
+
+  const [defectoAbierto, setDefectoAbierto] = useState(null);
 
   if (cargandoProyecto) return <div className="center-state">Cargando&hellip;</div>;
 
@@ -125,15 +129,27 @@ export default function Dashboard() {
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Últimos defectos</div>
           {defectosRecientes?.data.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Sin defectos registrados.</div>}
           {defectosRecientes?.data.slice(0, 5).map((d) => (
-            <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 8px', borderBottom: '1px solid var(--border)' }}>
+            <div
+              key={d.id}
+              onClick={() => setDefectoAbierto(d.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 8px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+            >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.titulo}</div>
               </div>
-              <span className="badge" style={{ padding: '3px 8px', fontSize: 11, background: sevBg(d.severidad), color: sevColor(d.severidad) }}>{d.severidad}</span>
+              <span className="badge" style={{ padding: '3px 8px', fontSize: 11, background: sevBg(d.severidad), color: sevColor(d.severidad), textTransform: 'capitalize' }}>{d.severidad}</span>
               <EstadoBadge estado={d.estado} size="sm" />
             </div>
           ))}
         </div>
+
+        {defectoAbierto && (
+          <DefectoDetalleModal
+            defectoId={defectoAbierto}
+            onClose={() => setDefectoAbierto(null)}
+            onCambiado={() => { recargarDefectos(); recargarDefectosAbiertos(); }}
+          />
+        )}
 
         <div className="card" style={{ padding: '18px 20px' }}>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Ciclos recientes</div>
@@ -159,8 +175,8 @@ function pct(n, total) {
 }
 
 function sevColor(sev) {
-  return sev === 'alta' ? 'var(--fail)' : sev === 'media' ? 'var(--block)' : 'var(--skip)';
+  return sev === 'critica' || sev === 'alta' ? 'var(--fail)' : sev === 'media' ? 'var(--block)' : 'var(--skip)';
 }
 function sevBg(sev) {
-  return sev === 'alta' ? 'var(--fail-bg)' : sev === 'media' ? 'var(--block-bg)' : 'var(--skip-bg)';
+  return sev === 'critica' || sev === 'alta' ? 'var(--fail-bg)' : sev === 'media' ? 'var(--block-bg)' : 'var(--skip-bg)';
 }
