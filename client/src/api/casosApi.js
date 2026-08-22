@@ -15,4 +15,5 @@ export const casosApi = {
   deprecar: (id) => api.patch(`/casos/${id}/deprecar`),
   reactivar: (id) => api.patch(`/casos/${id}/reactivar`),
   remove: (id) => api.delete(`/casos/${id}`),
+  versiones: (id) => api.get(`/casos/${id}/versiones`),
 };

@@ -9,4 +9,5 @@ export const ciclosApi = {
   bloquear: (id, comentario) => api.patch(`/ciclos/${id}/bloquear`, { comentario }),
   desbloquear: (id) => api.patch(`/ciclos/${id}/desbloquear`),
   completar: (id) => api.patch(`/ciclos/${id}/completar`),
+  coberturaPorSuite: (id) => api.get(`/ciclos/${id}/cobertura`),
 };

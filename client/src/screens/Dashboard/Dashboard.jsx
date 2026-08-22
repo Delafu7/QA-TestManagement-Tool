@@ -8,7 +8,25 @@ import { ciclosApi } from '../../api/ciclosApi';
 import { defectosApi } from '../../api/defectosApi';
 import EstadoBadge from '../../components/EstadoBadge';
 import DefectoDetalleModal from '../../components/DefectoDetalleModal';
+import CasoDiffModal from './CasoDiffModal';
+import { pct } from '../../utils/metrics';
 import { IconLayers, IconCheck, IconTrend, IconBug, IconPlus, IconDownload } from '../../components/icons';
+
+const PERIODOS = [
+  { value: 7, label: 'Últimos 7 días' },
+  { value: 30, label: 'Últimos 30 días' },
+  { value: 90, label: 'Últimos 90 días' },
+];
+
+function isoFechaHace(dias) {
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  return d.toISOString().slice(0, 10);
+}
+
+function hoyIso() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function Kpi({ label, value, Icon, color, bg }) {
   return (
@@ -57,6 +75,21 @@ export default function Dashboard() {
   );
 
   const [defectoAbierto, setDefectoAbierto] = useState(null);
+  const [casoDiffAbierto, setCasoDiffAbierto] = useState(null);
+  const [periodoDias, setPeriodoDias] = useState(7);
+
+  const { data: casosModificados } = useFetch(
+    () =>
+      proyectoId
+        ? proyectosApi.casosModificados(proyectoId, { desde: isoFechaHace(periodoDias), hasta: hoyIso() })
+        : Promise.resolve({ data: [], pagination: { total: 0 } }),
+    [proyectoId, periodoDias]
+  );
+
+  const { data: cobertura } = useFetch(
+    () => (isGestor && cicloActivoResumen ? ciclosApi.coberturaPorSuite(cicloActivoResumen.id) : Promise.resolve(null)),
+    [isGestor, cicloActivoResumen?.id]
+  );
 
   if (cargandoProyecto) return <div className="center-state">Cargando&hellip;</div>;
 
@@ -99,6 +132,13 @@ export default function Dashboard() {
         <Kpi label="Defectos abiertos" value={totalDefectosAbiertos ?? '—'} Icon={IconBug} color="var(--fail)" bg="var(--fail-bg)" />
       </div>
 
+      {ciclos && ciclos.data.length === 0 && !isGestor && (
+        <div className="card center-state" style={{ marginBottom: 24 }}>
+          <p>Todavía no hay ninguna fase en este proyecto.</p>
+          <Link to="/fases" className="btn btn-primary">Crear la primera fase</Link>
+        </div>
+      )}
+
       {cicloActivo && (
         <div className="card" style={{ padding: '20px 22px', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -108,6 +148,10 @@ export default function Dashboard() {
             </div>
             <Link to="/fases" style={{ fontSize: 12.5, fontWeight: 600 }}>Ver fase &rarr;</Link>
           </div>
+          {cicloActivo.totalCasos === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Sin ejecuciones asignadas todavía.</div>
+          ) : (
+            <>
           <div className="progress-bar" style={{ marginBottom: 12 }}>
             <div style={{ width: `${pct(cicloActivo.passed, cicloActivo.totalCasos)}%`, background: 'var(--pass)' }} />
             <div style={{ width: `${pct(cicloActivo.failed, cicloActivo.totalCasos)}%`, background: 'var(--fail)' }} />
@@ -121,8 +165,63 @@ export default function Dashboard() {
             <span><span className="progress-legend__dot" style={{ background: 'var(--border)' }} />Pendiente: <strong style={{ color: 'var(--text)' }}>{cicloActivo.pendiente}</strong></span>
             <span style={{ marginLeft: 'auto' }}>{Math.round(cicloActivo.tasaAvance * 100)}% completado</span>
           </div>
+            </>
+          )}
         </div>
       )}
+
+      {isGestor && cicloActivoResumen && (
+        <div className="card" style={{ padding: '18px 20px', marginBottom: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Cobertura por suite &middot; ciclo actual</div>
+          {cobertura === null && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Cargando&hellip;</div>}
+          {cobertura?.data.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Este proyecto todavía no tiene suites.</div>}
+          {cobertura?.data.map((s) => (
+            <div key={s.suiteId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
+              <div style={{ flex: '0 0 160px', fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.suiteNombre}</div>
+              {s.pctCobertura === null ? (
+                <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Sin casos activos</div>
+              ) : (
+                <>
+                  <div className="progress-bar" style={{ flex: 1 }}>
+                    <div style={{ width: `${s.pctCobertura}%`, background: 'var(--primary)' }} />
+                  </div>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, flex: '0 0 auto' }}>{s.pctCobertura}%</div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="card" style={{ padding: '18px 20px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>
+            Casos modificados <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>({casosModificados?.pagination.total ?? '—'})</span>
+          </div>
+          <select className="chip" value={periodoDias} onChange={(e) => setPeriodoDias(Number(e.target.value))}>
+            {PERIODOS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </select>
+        </div>
+        {casosModificados?.pagination.total === 0 && (
+          <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Sin cambios en casos en este periodo.</div>
+        )}
+        {casosModificados?.data.map((c) => (
+          <div
+            key={c.casoId}
+            onClick={() => setCasoDiffAbierto(c.casoId)}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 8px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.casoTitulo}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{c.suiteNombre}</div>
+            </div>
+            <span style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{c.numCambios} cambio{c.numCambios === 1 ? '' : 's'}</span>
+            <span style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{c.ultimaModificacion.slice(0, 10)}</span>
+          </div>
+        ))}
+      </div>
+
+      {casoDiffAbierto && <CasoDiffModal casoId={casoDiffAbierto} onClose={() => setCasoDiffAbierto(null)} />}
 
       <div className="two-col" style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 16 }}>
         <div className="card" style={{ padding: '18px 20px' }}>
@@ -167,11 +266,6 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
-
-function pct(n, total) {
-  if (!total) return 0;
-  return Math.round((n / total) * 1000) / 10;
 }
 
 function sevColor(sev) {

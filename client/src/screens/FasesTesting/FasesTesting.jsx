@@ -9,11 +9,7 @@ import Modal from '../../components/Modal';
 import CrearProyectoModal from '../../components/CrearProyectoModal';
 import { IconPlus } from '../../components/icons';
 import CicloFormModal from './CicloFormModal';
-
-function pct(n, total) {
-  if (!total) return 0;
-  return Math.round((n / total) * 1000) / 10;
-}
+import { pct } from '../../utils/metrics';
 
 function CicloCard({ ciclo, isQa, onAccion, onIrAEjecutar }) {
   const total = ciclo.totalCasos || 1;
