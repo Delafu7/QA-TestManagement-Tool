@@ -11,4 +11,12 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
+// Migración manual mínima (08-decisiones.md §9): CREATE TABLE IF NOT EXISTS no añade
+// columnas a una tabla ya existente, así que las bases de datos creadas antes de este
+// campo necesitan este paso explícito.
+const ciclosColumns = db.prepare('PRAGMA table_info(ciclos)').all().map((c) => c.name);
+if (!ciclosColumns.includes('comentario')) {
+  db.exec('ALTER TABLE ciclos ADD COLUMN comentario TEXT');
+}
+
 module.exports = db;

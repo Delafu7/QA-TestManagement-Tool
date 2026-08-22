@@ -37,7 +37,7 @@ const iniciar = (id) => transicion(id, { planificada: 'en_progreso' });
 
 const bloquear = (id, comentario) => {
   if (!comentario) throw badRequest('Se requiere un comentario para bloquear el ciclo');
-  return transicion(id, { en_progreso: 'bloqueada' });
+  return transicion(id, { en_progreso: 'bloqueada' }, { comentario });
 };
 
 const desbloquear = (id) => transicion(id, { bloqueada: 'en_progreso' });

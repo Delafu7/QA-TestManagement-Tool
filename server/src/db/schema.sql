@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS ciclos (
   fecha_fin_prevista TEXT NOT NULL,
   fecha_fin_real TEXT,
   responsable_id TEXT NOT NULL REFERENCES usuarios(id),
+  comentario TEXT,
   creado_en TEXT NOT NULL,
   actualizado_en TEXT NOT NULL
 );

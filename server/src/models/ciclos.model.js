@@ -11,6 +11,7 @@ const toApi = (row) => ({
   fechaFinPrevista: row.fecha_fin_prevista,
   fechaFinReal: row.fecha_fin_real,
   responsableId: row.responsable_id,
+  comentario: row.comentario,
   creadoEn: row.creado_en,
   actualizadoEn: row.actualizado_en,
 });
@@ -43,17 +44,19 @@ const create = ({ proyectoId, nombre, descripcion = null, fechaInicio, fechaFinP
   return findById(id);
 };
 
-const setEstado = (id, estado, { fechaFinReal } = {}) => {
+const setEstado = (id, estado, { fechaFinReal, comentario } = {}) => {
+  const sets = ['estado = ?', 'actualizado_en = ?'];
+  const params = [estado, now()];
   if (fechaFinReal !== undefined) {
-    db.prepare('UPDATE ciclos SET estado = ?, fecha_fin_real = ?, actualizado_en = ? WHERE id = ?').run(
-      estado,
-      fechaFinReal,
-      now(),
-      id
-    );
-  } else {
-    db.prepare('UPDATE ciclos SET estado = ?, actualizado_en = ? WHERE id = ?').run(estado, now(), id);
+    sets.push('fecha_fin_real = ?');
+    params.push(fechaFinReal);
   }
+  if (comentario !== undefined) {
+    sets.push('comentario = ?');
+    params.push(comentario);
+  }
+  params.push(id);
+  db.prepare(`UPDATE ciclos SET ${sets.join(', ')} WHERE id = ?`).run(...params);
   return findById(id);
 };
 
