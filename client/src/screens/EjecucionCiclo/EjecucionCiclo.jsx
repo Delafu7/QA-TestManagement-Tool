@@ -46,6 +46,7 @@ export default function EjecucionCiclo() {
   const [comentario, setComentario] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [modalDefecto, setModalDefecto] = useState(false);
+  const [reintentando, setReintentando] = useState(false);
 
   const cargarCola = useCallback(async () => {
     const [cicloRes, ejecucionesRes] = await Promise.all([
@@ -141,6 +142,27 @@ export default function EjecucionCiclo() {
       setError(err.message);
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function reintentar() {
+    setReintentando(true);
+    setError(null);
+    try {
+      await ejecucionesApi.reintentar(ejecucionActual.id);
+      const nuevaCola = await cargarCola();
+      const item = nuevaCola.find((e) => e.id === ejecucionActual.id);
+      const tomada = await ejecucionesApi.tomar(item.id);
+      setResultadosPaso({});
+      setResultadoGeneral(null);
+      setComentario('');
+      setEjecucionActual(tomada);
+      setCasoActual(item.caso);
+      setSeleccionId(item.id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setReintentando(false);
     }
   }
 
@@ -285,6 +307,14 @@ export default function EjecucionCiclo() {
                     onClick={guardarResultado}
                   >
                     {guardando ? 'Guardando…' : 'Guardar resultado'}
+                  </button>
+                </div>
+              )}
+
+              {!enEdicion && ['failed', 'blocked'].includes(ejecucionActual?.estado) && (
+                <div style={{ display: 'flex', marginTop: 22 }}>
+                  <button className="btn btn-primary" disabled={reintentando} onClick={reintentar}>
+                    {reintentando ? 'Reiniciando…' : 'Reintentar'}
                   </button>
                 </div>
               )}
