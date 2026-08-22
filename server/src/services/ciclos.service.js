@@ -44,4 +44,9 @@ const desbloquear = (id) => transicion(id, { bloqueada: 'en_progreso' });
 
 const completar = (id) => transicion(id, { en_progreso: 'completada' }, { fechaFinReal: now().slice(0, 10) });
 
-module.exports = { list, getById, create, asignarCasos, iniciar, bloquear, desbloquear, completar };
+const coberturaPorSuite = (id) => {
+  if (!ciclosModel.findById(id)) throw notFound('Fase/Ciclo');
+  return ciclosModel.coberturaPorSuite(id);
+};
+
+module.exports = { list, getById, create, asignarCasos, iniciar, bloquear, desbloquear, completar, coberturaPorSuite };

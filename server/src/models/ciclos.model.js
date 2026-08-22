@@ -80,6 +80,32 @@ const metricas = (id) => {
   return { totalCasos, passed, failed, blocked, skipped, pendiente, tasaAvance, tasaExito };
 };
 
+// Cobertura por suite dentro de este ciclo, para las tarjetas del gestor
+// (04-ui-ux.md §4): % de casos activos de cada suite que tienen al menos una
+// ejecución registrada en este ciclo. Agregado en SQL sobre todo el ciclo, no
+// sobre una página de casos ya recortada por el cliente.
+const coberturaPorSuite = (cicloId) =>
+  db
+    .prepare(
+      `SELECT s.id AS suite_id, s.nombre AS suite_nombre,
+              COUNT(DISTINCT CASE WHEN c.estado = 'activo' THEN c.id END) AS total_casos,
+              COUNT(DISTINCT CASE WHEN c.estado = 'activo' AND e.id IS NOT NULL THEN c.id END) AS casos_cubiertos
+       FROM suites s
+       JOIN casos_prueba c ON c.suite_id = s.id
+       LEFT JOIN ejecuciones e ON e.caso_id = c.id AND e.ciclo_id = ?
+       WHERE s.proyecto_id = (SELECT proyecto_id FROM ciclos WHERE id = ?)
+       GROUP BY s.id
+       ORDER BY s.nombre`
+    )
+    .all(cicloId, cicloId)
+    .map((r) => ({
+      suiteId: r.suite_id,
+      suiteNombre: r.suite_nombre,
+      totalCasos: r.total_casos,
+      casosCubiertos: r.casos_cubiertos,
+      pctCobertura: r.total_casos > 0 ? Math.round((r.casos_cubiertos / r.total_casos) * 1000) / 10 : null,
+    }));
+
 const findActivo = (proyectoId) => {
   const row = db
     .prepare("SELECT * FROM ciclos WHERE proyecto_id = ? AND estado = 'en_progreso' ORDER BY fecha_inicio DESC LIMIT 1")
@@ -87,4 +113,4 @@ const findActivo = (proyectoId) => {
   return row ? toApi(row) : null;
 };
 
-module.exports = { findById, list, create, setEstado, metricas, findActivo };
+module.exports = { findById, list, create, setEstado, metricas, findActivo, coberturaPorSuite };

@@ -66,6 +66,20 @@ CREATE TABLE IF NOT EXISTS pasos (
   resultado_esperado TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS caso_versiones (
+  id TEXT PRIMARY KEY,
+  caso_id TEXT NOT NULL REFERENCES casos_prueba(id),
+  version INTEGER NOT NULL,
+  titulo TEXT NOT NULL,
+  descripcion TEXT,
+  precondiciones TEXT,
+  prioridad TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  pasos_json TEXT NOT NULL,
+  editado_por_id TEXT NOT NULL REFERENCES usuarios(id),
+  creado_en TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS ciclos (
   id TEXT PRIMARY KEY,
   proyecto_id TEXT NOT NULL REFERENCES proyectos(id),
@@ -120,6 +134,8 @@ CREATE INDEX IF NOT EXISTS idx_suites_proyecto ON suites(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_suites_padre ON suites(suite_padre_id);
 CREATE INDEX IF NOT EXISTS idx_casos_suite ON casos_prueba(suite_id);
 CREATE INDEX IF NOT EXISTS idx_pasos_caso ON pasos(caso_id);
+CREATE INDEX IF NOT EXISTS idx_caso_versiones_caso ON caso_versiones(caso_id);
+CREATE INDEX IF NOT EXISTS idx_caso_versiones_creado_en ON caso_versiones(creado_en);
 CREATE INDEX IF NOT EXISTS idx_ciclos_proyecto ON ciclos(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_ejecuciones_ciclo ON ejecuciones(ciclo_id);
 CREATE INDEX IF NOT EXISTS idx_ejecuciones_caso ON ejecuciones(caso_id);

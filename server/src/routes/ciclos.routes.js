@@ -7,6 +7,7 @@ const router = express.Router();
 router.get('/proyectos/:proyectoId/ciclos', controller.list);
 router.post('/proyectos/:proyectoId/ciclos', requireRole('qa'), controller.create);
 router.get('/ciclos/:id', controller.getById);
+router.get('/ciclos/:id/cobertura', controller.coberturaPorSuite);
 router.post('/ciclos/:id/casos', requireRole('qa'), controller.asignarCasos);
 router.patch('/ciclos/:id/iniciar', requireRole('qa'), controller.iniciar);
 router.patch('/ciclos/:id/bloquear', requireRole('qa'), controller.bloquear);

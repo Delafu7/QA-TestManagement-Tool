@@ -49,4 +49,8 @@ const completar = asyncHandler(async (req, res) => {
   res.json(ciclosService.completar(req.params.id));
 });
 
-module.exports = { list, getById, create, asignarCasos, iniciar, bloquear, desbloquear, completar };
+const coberturaPorSuite = asyncHandler(async (req, res) => {
+  res.json({ data: ciclosService.coberturaPorSuite(req.params.id) });
+});
+
+module.exports = { list, getById, create, asignarCasos, iniciar, bloquear, desbloquear, completar, coberturaPorSuite };

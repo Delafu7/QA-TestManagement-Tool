@@ -1,6 +1,7 @@
 const db = require('../db/connection');
 const { newId, now } = require('../utils/ids');
 const { parsePagination } = require('../utils/pagination');
+const casoVersionesModel = require('./casoVersiones.model');
 
 const toApiBase = (row) => ({
   id: row.id,
@@ -99,7 +100,7 @@ const create = ({ suiteId, titulo, descripcion = null, precondiciones = null, pr
   return findById(id);
 };
 
-const update = (id, fields) => {
+const update = (id, fields, editadoPorId) => {
   const current = findRawById(id);
   if (!current) return null;
   const titulo = fields.titulo ?? current.titulo;
@@ -108,6 +109,17 @@ const update = (id, fields) => {
   const prioridad = fields.prioridad ?? current.prioridad;
   const tipo = fields.tipo ?? current.tipo;
   const tx = db.transaction(() => {
+    // Snapshot del estado ANTERIOR al PATCH, para el historial de cambios de casos.
+    casoVersionesModel.crearSnapshot({
+      casoId: id,
+      titulo: current.titulo,
+      descripcion: current.descripcion,
+      precondiciones: current.precondiciones,
+      prioridad: current.prioridad,
+      tipo: current.tipo,
+      pasos: pasosDeCaso(id),
+      editadoPorId,
+    });
     db.prepare(
       'UPDATE casos_prueba SET titulo = ?, descripcion = ?, precondiciones = ?, prioridad = ?, tipo = ?, actualizado_en = ? WHERE id = ?'
     ).run(titulo, descripcion, precondiciones, prioridad, tipo, now(), id);
@@ -117,6 +129,8 @@ const update = (id, fields) => {
   tx();
   return findById(id);
 };
+
+const versiones = (id) => casoVersionesModel.listByCaso(id);
 
 const setEstado = (id, estado) => {
   db.prepare('UPDATE casos_prueba SET estado = ?, actualizado_en = ? WHERE id = ?').run(estado, now(), id);
@@ -149,4 +163,5 @@ module.exports = {
   remove,
   countEjecucionesHistoricas,
   pasosDeCaso,
+  versiones,
 };

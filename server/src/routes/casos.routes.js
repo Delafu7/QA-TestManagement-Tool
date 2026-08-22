@@ -7,6 +7,7 @@ const router = express.Router();
 router.get('/suites/:suiteId/casos', controller.list);
 router.post('/suites/:suiteId/casos', requireRole('qa'), controller.create);
 router.get('/casos/:id', controller.getById);
+router.get('/casos/:id/versiones', controller.versiones);
 router.patch('/casos/:id', requireRole('qa'), controller.update);
 router.patch('/casos/:id/publicar', requireRole('qa'), controller.publicar);
 router.patch('/casos/:id/deprecar', requireRole('qa'), controller.deprecar);

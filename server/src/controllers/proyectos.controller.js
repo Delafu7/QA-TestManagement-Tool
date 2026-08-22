@@ -25,4 +25,9 @@ const archivar = asyncHandler(async (req, res) => {
   res.json(proyectosService.archivar(req.params.id));
 });
 
-module.exports = { list, getById, create, update, archivar };
+const casosModificados = asyncHandler(async (req, res) => {
+  const { desde, hasta, page, pageSize } = req.query;
+  res.json(proyectosService.casosModificados(req.params.id, { desde, hasta, page, pageSize }));
+});
+
+module.exports = { list, getById, create, update, archivar, casosModificados };

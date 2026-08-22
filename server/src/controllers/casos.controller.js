@@ -32,7 +32,11 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  res.json(casosService.update(req.params.id, req.body));
+  res.json(casosService.update(req.params.id, req.body, req.usuarioId));
+});
+
+const versiones = asyncHandler(async (req, res) => {
+  res.json(casosService.versiones(req.params.id));
 });
 
 const publicar = asyncHandler(async (req, res) => {
@@ -52,4 +56,4 @@ const remove = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { list, getById, create, update, publicar, deprecar, reactivar, remove };
+module.exports = { list, getById, create, update, publicar, deprecar, reactivar, remove, versiones };

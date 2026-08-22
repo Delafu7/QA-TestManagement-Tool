@@ -16,7 +16,7 @@ const create = (fields) => {
   return casosModel.create(fields);
 };
 
-const update = (id, fields) => {
+const update = (id, fields, editadoPorId) => {
   if (!casosModel.findRawById(id)) throw notFound('Caso de prueba');
   if (fields.pasos && casosModel.countEjecucionesHistoricas(id) > 0) {
     throw unprocessable(
@@ -24,7 +24,12 @@ const update = (id, fields) => {
       'No se pueden modificar los pasos de un caso con ejecuciones asociadas; use deprecar y cree un nuevo caso si necesita cambiar el flujo'
     );
   }
-  return casosModel.update(id, fields);
+  return casosModel.update(id, fields, editadoPorId);
+};
+
+const versiones = (id) => {
+  if (!casosModel.findRawById(id)) throw notFound('Caso de prueba');
+  return casosModel.versiones(id);
 };
 
 const transicion = (id, transiciones) => {
@@ -65,4 +70,4 @@ const assertActivo = (id) => {
   return caso;
 };
 
-module.exports = { list, getById, create, update, publicar, deprecar, reactivar, remove, assertActivo };
+module.exports = { list, getById, create, update, publicar, deprecar, reactivar, remove, assertActivo, versiones };
