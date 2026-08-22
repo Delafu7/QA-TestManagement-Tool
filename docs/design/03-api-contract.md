@@ -148,6 +148,7 @@ Errores específicos: `409 INVALID_TRANSITION` en los endpoints de cambio de est
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/api/ciclos/:cicloId/ejecuciones` | Lista. Query: `estado`, `ejecutorId` |
+| GET | `/api/casos/:casoId/ejecuciones` | Historial de ejecuciones de un caso a través de todos sus ciclos, más reciente primero. Cada elemento incluye `cicloNombre` y `ejecutorNombre` desnormalizados (para el bloque "Historial de ejecuciones" de [[04-ui-ux]] §5, que no necesita más detalle que fecha/estado/ejecutor/ciclo) |
 | GET | `/api/ejecuciones/:id` | Detalle con `resultadosPaso` |
 | PATCH | `/api/ejecuciones/:id/tomar` | `pendiente → en_progreso`, asigna `ejecutorId` |
 | PATCH | `/api/ejecuciones/:id/resultado` | Cierra la ejecución (`passed`/`failed`/`blocked`/`skipped`) |

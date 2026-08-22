@@ -53,6 +53,19 @@ const list = (cicloId, { estado, ejecutorId } = {}) => {
 
 const listRawByCiclo = (cicloId) => db.prepare('SELECT * FROM ejecuciones WHERE ciclo_id = ?').all(cicloId);
 
+const listByCaso = (casoId) =>
+  db
+    .prepare(
+      `SELECT e.*, c.nombre AS ciclo_nombre, u.nombre AS ejecutor_nombre
+       FROM ejecuciones e
+       JOIN ciclos c ON c.id = e.ciclo_id
+       LEFT JOIN usuarios u ON u.id = e.ejecutor_id
+       WHERE e.caso_id = ?
+       ORDER BY e.fecha_ejecucion DESC, e.creado_en DESC`
+    )
+    .all(casoId)
+    .map((row) => ({ ...toApiBase(row), cicloNombre: row.ciclo_nombre, ejecutorNombre: row.ejecutor_nombre }));
+
 const createBulk = (cicloId, casoIds) => {
   const insert = db.prepare(
     `INSERT INTO ejecuciones (id, ciclo_id, caso_id, estado, creado_en, actualizado_en)
@@ -136,6 +149,7 @@ module.exports = {
   findRawById,
   list,
   listRawByCiclo,
+  listByCaso,
   createBulk,
   tomar,
   cerrarResultado,

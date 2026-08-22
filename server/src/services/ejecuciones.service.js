@@ -5,6 +5,8 @@ const logger = require('../utils/logger');
 
 const list = (cicloId, query) => ejecucionesModel.list(cicloId, query);
 
+const listByCaso = (casoId) => ejecucionesModel.listByCaso(casoId);
+
 const getById = (id) => {
   const ejecucion = ejecucionesModel.findById(id);
   if (!ejecucion) throw notFound('Ejecución');
@@ -67,4 +69,4 @@ const reintentar = (id) => {
   return ejecucionesModel.reintentar(id);
 };
 
-module.exports = { list, getById, tomar, registrarResultado, reintentar };
+module.exports = { list, listByCaso, getById, tomar, registrarResultado, reintentar };

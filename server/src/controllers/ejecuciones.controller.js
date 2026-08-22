@@ -10,6 +10,10 @@ const getById = asyncHandler(async (req, res) => {
   res.json(ejecucionesService.getById(req.params.id));
 });
 
+const listByCaso = asyncHandler(async (req, res) => {
+  res.json({ data: ejecucionesService.listByCaso(req.params.casoId) });
+});
+
 const tomar = asyncHandler(async (req, res) => {
   res.json(ejecucionesService.tomar(req.params.id, req.usuarioId));
 });
@@ -23,4 +27,4 @@ const reintentar = asyncHandler(async (req, res) => {
   res.json(ejecucionesService.reintentar(req.params.id));
 });
 
-module.exports = { list, getById, tomar, registrarResultado, reintentar };
+module.exports = { list, listByCaso, getById, tomar, registrarResultado, reintentar };
