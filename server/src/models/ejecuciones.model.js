@@ -118,6 +118,19 @@ const findProyectoId = (ejecucionId) => {
   return row ? row.proyectoId : null;
 };
 
+const findContextoNegocio = (ejecucionId) => {
+  const row = db
+    .prepare(
+      `SELECT c.titulo AS casoTitulo, s.nombre AS suiteNombre
+       FROM ejecuciones e
+       JOIN casos_prueba c ON c.id = e.caso_id
+       JOIN suites s ON s.id = c.suite_id
+       WHERE e.id = ?`
+    )
+    .get(ejecucionId);
+  return row || { casoTitulo: null, suiteNombre: null };
+};
+
 module.exports = {
   findById,
   findRawById,
@@ -129,4 +142,5 @@ module.exports = {
   reintentar,
   resultadosPasoDeEjecucion,
   findProyectoId,
+  findContextoNegocio,
 };

@@ -42,12 +42,15 @@ const registrarResultado = (id, { estado, comentario, duracionSegundos, resultad
   }
 
   const resultado = ejecucionesModel.cerrarResultado(id, { estado, comentario, duracionSegundos, resultadosPaso });
+  const { casoTitulo, suiteNombre } = ejecucionesModel.findContextoNegocio(id);
 
   logger.info({
     tipo: 'evento_negocio',
     evento: 'ejecucion_cerrada',
     cicloId: resultado.cicloId,
     casoId: resultado.casoId,
+    casoTitulo,
+    suiteNombre,
     estadoResultado: resultado.estado,
     duracionSegundosEjecucion: resultado.duracionSegundos,
   });
