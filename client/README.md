@@ -1,16 +1,30 @@
-# React + Vite
+# QA Test Management Tool — client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React SPA (Vite) for the QA Test Management Tool. See the [project root README](../README.md) for what this app does and how to run the full stack.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev       # http://localhost:5173, proxies /api to http://localhost:4000
+```
 
-## React Compiler
+Start the [server](../server) first — the dev proxy (`vite.config.js`) forwards `/api/*` to it.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run build       # production build → dist/
+npm run preview      # serve that build locally
+npm run lint          # oxlint
+```
 
-## Expanding the Oxlint configuration
+## Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Folder | Contents |
+|---|---|
+| `src/api/` | One fetch module per backend resource |
+| `src/components/` | Shared UI (modals, badges, nav, tag picker...) |
+| `src/context/` | Active user (`UsuarioContext`) and active project (`ProyectoContext`) |
+| `src/screens/` | One folder per screen: Dashboard, CasosPrueba, FasesTesting, EjecucionCiclo, Resultados |
+| `src/styles/` | Design tokens (`tokens.css`) + global styles |
+
+Full architecture, API reference, and data model docs live in [`/docs`](../docs) at the repo root.
