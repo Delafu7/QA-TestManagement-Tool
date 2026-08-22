@@ -119,7 +119,18 @@ const setEstado = (id, estado) => {
   return findById(id);
 };
 
-const remove = (id) => db.prepare('DELETE FROM casos_prueba WHERE id = ?').run(id);
+const remove = (id) => {
+  // casos_prueba solo se elimina cuando no tiene ejecuciones históricas (comprobado en
+  // el servicio), pero sí puede tener pasos y etiquetas propias que hay que borrar antes:
+  // sin esto, la FK de `pasos`/`caso_etiquetas` hacia `casos_prueba` hace que el DELETE
+  // falle siempre (todo caso válido tiene al menos un paso).
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM caso_etiquetas WHERE caso_id = ?').run(id);
+    db.prepare('DELETE FROM pasos WHERE caso_id = ?').run(id);
+    db.prepare('DELETE FROM casos_prueba WHERE id = ?').run(id);
+  });
+  tx();
+};
 
 const countEjecucionesHistoricas = (id) =>
   db.prepare('SELECT COUNT(*) AS n FROM ejecuciones WHERE caso_id = ?').get(id).n;

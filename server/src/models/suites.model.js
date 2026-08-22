@@ -59,6 +59,10 @@ const remove = (id) => db.prepare('DELETE FROM suites WHERE id = ?').run(id);
 const countCasosActivos = (id) =>
   db.prepare("SELECT COUNT(*) AS n FROM casos_prueba WHERE suite_id = ? AND estado = 'activo'").get(id).n;
 
+const countCasos = (id) => db.prepare('SELECT COUNT(*) AS n FROM casos_prueba WHERE suite_id = ?').get(id).n;
+
+const countHijas = (id) => db.prepare('SELECT COUNT(*) AS n FROM suites WHERE suite_padre_id = ?').get(id).n;
+
 const cobertura = (suiteId, cicloActualId = null) => {
   const totalActivos = countCasosActivos(suiteId);
   if (totalActivos === 0) return null;
@@ -74,4 +78,15 @@ const cobertura = (suiteId, cicloActualId = null) => {
   return { totalActivos, conEjecucion, ratio: conEjecucion / totalActivos };
 };
 
-module.exports = { findById, listByProyecto, buildTree, create, update, remove, countCasosActivos, cobertura };
+module.exports = {
+  findById,
+  listByProyecto,
+  buildTree,
+  create,
+  update,
+  remove,
+  countCasosActivos,
+  countCasos,
+  countHijas,
+  cobertura,
+};
