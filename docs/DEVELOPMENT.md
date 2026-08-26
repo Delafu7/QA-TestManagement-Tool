@@ -27,8 +27,28 @@ Listens on `http://localhost:4000` by default (`PORT`). By default it stores its
 | `NOTION_API_BASE_URL` | `https://api.notion.com/v1` | Override for testing against a Notion API mock |
 | `RATE_LIMIT_WINDOW_MS` | `60000` | Rate-limiting window, in ms, for `/api/*` |
 | `RATE_LIMIT_MAX` | `300` | Max requests per client IP per window before a `429` |
+| `RUNNER_ENABLED` | unset (disabled) | Set to `true` to turn on the in-app terminal runner (see below). With this unset, or `RUNNER_WORKSPACE_ROOT` unset, every runner endpoint returns `501` and the client hides the panel. |
+| `RUNNER_WORKSPACE_ROOT` | unset | Absolute path to the directory tree the runner is allowed to browse and run commands in. All navigation (`pwd`/`ls`/`cd`) and every run's working directory are jailed inside this root — absolute paths, `..` escapes, and symlinks pointing outside it are rejected with `400`. |
+| `RUNNER_TIMEOUT_MS` | `600000` (10 min) | Hard timeout per run; the process (and its whole process group — see below) is killed and the run is stored as `timeout`. |
+| `RUNNER_OUTPUT_CAP_BYTES` | `2097152` (2 MB) | Captured output cap per run; output beyond this is dropped and the run is flagged `salidaTruncada: true` rather than growing unbounded. |
 
 No `.env` file is read automatically — export these in your shell or prefix the command, e.g. `PORT=4100 npm run dev`.
+
+### Terminal runner
+
+The terminal panel (`/terminal` in the client) lets a QA engineer browse `RUNNER_WORKSPACE_ROOT` and run a small, explicit allowlist of commands — never an arbitrary shell string. This is opt-in and off by default: **there is no password authentication in this app** (see [docs/ARCHITECTURE.md#authentication-model](../docs/ARCHITECTURE.md#authentication-model)), so enabling it means anyone who can reach the API and set `X-User-Id` to a `qa` user can execute whatever is on the allowlist against the mounted workspace. Only enable it on a genuinely trusted network, with a workspace root that contains nothing you wouldn't want a `qa` user to run test commands against.
+
+To add a command to the allowlist, edit `ALLOWED_COMMANDS` in `server/src/config/runner.js`:
+
+```js
+{ id: 'npx-jest', bin: 'npx', baseArgs: ['jest'], label: 'npx jest' },
+```
+
+- `bin` is spawned directly (`shell: false`, never a joined string) — it must be resolvable on the server's `PATH`.
+- `baseArgs` is the full, fixed argument list always passed to `bin` — the client can only pick a command by `id` and cannot append or override any arguments. A run request that includes `argumentosExtra` is rejected with `400` before any process is spawned.
+- This is deliberate, not a missing feature: a "safe characters" pattern on extra arguments isn't a sound defense, because the allowlisted binary's own flags can change what it does regardless of which characters they're made of. For example `npm test --prefix <path>` uses no `..` and no shell metacharacters, yet makes `npm` run the `test` script of a completely different `package.json` at `<path>` — escaping the workspace jail without ever touching `directorioRelativo`. `npm` alone has several flags like this (`--prefix`, `--userconfig`, `--globalconfig`, `--script-shell`). If a command genuinely needs variable arguments, add an explicit per-`commandId` allowlist of exact flag patterns to `server/src/config/runner.js` and validate against that — never a generic character-class check.
+
+Each run gets a minimal, explicit environment (`PATH`, `HOME`, `LANG`) — never a copy of the server's full environment — so secrets like the Notion token are never exposed to a test command.
 
 ### Seeding sample data
 

@@ -4,9 +4,11 @@ import { ciclosApi } from '../../api/ciclosApi';
 import { ejecucionesApi } from '../../api/ejecucionesApi';
 import { casosApi } from '../../api/casosApi';
 import { tiposPruebaApi } from '../../api/tiposPruebaApi';
+import { runnerApi } from '../../api/runnerApi';
 import { IconArrowLeft, IconCheck, IconCross, IconBlock, IconSkip, IconClock, IconWarning } from '../../components/icons';
 import DefectoFormModal from './DefectoFormModal';
 import TipoPruebaBadge from '../../components/TipoPruebaBadge';
+import EstadoBadge from '../../components/EstadoBadge';
 
 const ESTADO_ICON = { passed: IconCheck, failed: IconCross, blocked: IconBlock, skipped: IconSkip };
 const ESTADO_COLOR = {
@@ -50,6 +52,7 @@ export default function EjecucionCiclo() {
   const [guardando, setGuardando] = useState(false);
   const [modalDefecto, setModalDefecto] = useState(false);
   const [reintentando, setReintentando] = useState(false);
+  const [runnerRuns, setRunnerRuns] = useState(null);
 
   const cargarCola = useCallback(async () => {
     const [cicloRes, ejecucionesRes] = await Promise.all([
@@ -84,6 +87,15 @@ export default function EjecucionCiclo() {
       })
       .catch((e) => setError(e.message));
   }, [cargarCola]);
+
+  // Si el runner está deshabilitado esto simplemente falla en silencio (501):
+  // no es un error de la pantalla, solo no hay nada que mostrar aquí.
+  useEffect(() => {
+    runnerApi
+      .list({ cicloId })
+      .then(setRunnerRuns)
+      .catch(() => setRunnerRuns(null));
+  }, [cicloId]);
 
   useEffect(() => {
     if (!seleccionId || !cola) return;
@@ -191,6 +203,18 @@ export default function EjecucionCiclo() {
         <div style={{ flex: 1 }} />
         <Link to="/fases" className="btn btn-ghost btn-sm">Salir</Link>
       </div>
+
+      {runnerRuns?.data.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 32px', borderBottom: '1px solid var(--border)', overflowX: 'auto', fontSize: 12.5 }}>
+          <span style={{ color: 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>Ejecuciones de terminal</span>
+          {runnerRuns.data.slice(0, 5).map((r) => (
+            <span key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+              <EstadoBadge estado={r.estado} size="sm" />
+              <span style={{ color: 'var(--text-2)' }}>{r.comando} {(r.argumentos || []).join(' ')}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       <div style={{ flex: 1, display: 'flex' }}>
         <div style={{ width: 300, flex: '0 0 auto', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: 10 }}>

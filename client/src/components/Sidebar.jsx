@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { IconHome, IconList, IconLayers, IconDownload, IconChevronDown, IconSettings } from './icons';
+import { IconHome, IconList, IconLayers, IconDownload, IconTerminal, IconChevronDown, IconSettings } from './icons';
 import { useUsuario } from '../context/UsuarioContext';
 import { useProyecto } from '../context/ProyectoContext';
+import { runnerApi } from '../api/runnerApi';
 import AjustesProyectoModal from './AjustesProyectoModal';
 
 const NAV_ITEMS = [
@@ -25,7 +26,16 @@ export default function Sidebar() {
   const { usuario, cerrarSesion } = useUsuario();
   const { proyectos, proyectoId, proyectoActual, seleccionarProyecto, recargar } = useProyecto();
   const [ajustesAbiertos, setAjustesAbiertos] = useState(false);
+  const [runnerHabilitado, setRunnerHabilitado] = useState(false);
   const isQa = usuario?.rol === 'qa';
+
+  useEffect(() => {
+    runnerApi.status().then((res) => setRunnerHabilitado(res.habilitado)).catch(() => setRunnerHabilitado(false));
+  }, []);
+
+  const navItems = runnerHabilitado
+    ? [...NAV_ITEMS, { to: '/terminal', label: 'Terminal', Icon: IconTerminal }]
+    : NAV_ITEMS;
 
   return (
     <aside className="sidebar">
@@ -81,7 +91,7 @@ export default function Sidebar() {
       )}
 
       <nav className="sidebar__nav">
-        {NAV_ITEMS.map(({ to, label, Icon, end }) => (
+        {navItems.map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
             <Icon size={18} />
             <span className="nav-label">{label}</span>

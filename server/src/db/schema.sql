@@ -144,6 +144,23 @@ CREATE TABLE IF NOT EXISTS defectos (
   actualizado_en TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS runner_runs (
+  id TEXT PRIMARY KEY,
+  proyecto_id TEXT NOT NULL REFERENCES proyectos(id),
+  ciclo_id TEXT REFERENCES ciclos(id),
+  tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
+  directorio_relativo TEXT NOT NULL,
+  comando TEXT NOT NULL,
+  argumentos TEXT NOT NULL,
+  estado TEXT NOT NULL CHECK (estado IN ('en_progreso', 'passed', 'failed', 'timeout', 'cancelado')) DEFAULT 'en_progreso',
+  codigo_salida INTEGER,
+  salida TEXT NOT NULL DEFAULT '',
+  salida_truncada INTEGER NOT NULL DEFAULT 0,
+  iniciado_en TEXT NOT NULL,
+  finalizado_en TEXT,
+  iniciado_por_id TEXT NOT NULL REFERENCES usuarios(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_tipos_prueba_proyecto ON tipos_prueba(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_etiquetas_proyecto ON etiquetas(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_suites_proyecto ON suites(proyecto_id);
@@ -158,3 +175,5 @@ CREATE INDEX IF NOT EXISTS idx_ejecuciones_caso ON ejecuciones(caso_id);
 CREATE INDEX IF NOT EXISTS idx_resultados_paso_ejecucion ON resultados_paso(ejecucion_id);
 CREATE INDEX IF NOT EXISTS idx_defectos_proyecto ON defectos(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_defectos_ejecucion_origen ON defectos(ejecucion_origen_id);
+CREATE INDEX IF NOT EXISTS idx_runner_runs_proyecto ON runner_runs(proyecto_id);
+CREATE INDEX IF NOT EXISTS idx_runner_runs_ciclo ON runner_runs(ciclo_id);

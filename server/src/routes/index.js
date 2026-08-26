@@ -11,5 +11,6 @@ router.use(require('./ciclos.routes'));
 router.use(require('./ejecuciones.routes'));
 router.use(require('./defectos.routes'));
 router.use(require('./export.routes'));
+router.use(require('./runner.routes'));
 
 module.exports = router;

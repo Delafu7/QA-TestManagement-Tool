@@ -16,6 +16,9 @@ const ESTADOS = {
   bloqueada: { color: 'var(--block)', bg: 'var(--block-bg)', Icon: IconBlock, label: 'bloqueada' },
   completada: { color: 'var(--pass)', bg: 'var(--pass-bg)', Icon: IconCheck, label: 'completada' },
 
+  timeout: { color: 'var(--block)', bg: 'var(--block-bg)', Icon: IconClock, label: 'timeout' },
+  cancelado: { color: 'var(--skip)', bg: 'var(--skip-bg)', Icon: IconSkip, label: 'cancelado' },
+
   abierto: { color: 'var(--fail)', bg: 'var(--fail-bg)', Icon: IconCircle, label: 'abierto' },
   resuelto: { color: 'var(--pass)', bg: 'var(--pass-bg)', Icon: IconCheck, label: 'resuelto' },
   cerrado: { color: 'var(--pass)', bg: 'var(--pass-bg)', Icon: IconCheck, label: 'cerrado' },

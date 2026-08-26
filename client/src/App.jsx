@@ -8,6 +8,7 @@ import CasosListado from './screens/CasosPrueba/CasosListado';
 import FasesTesting from './screens/FasesTesting/FasesTesting';
 import Resultados from './screens/Resultados/Resultados';
 import EjecucionCiclo from './screens/EjecucionCiclo/EjecucionCiclo';
+import Terminal from './screens/Terminal/Terminal';
 
 function AppRoutes() {
   const { usuario, cargando } = useUsuario();
@@ -25,6 +26,7 @@ function AppRoutes() {
           <Route path="/fases" element={<FasesTesting />} />
           <Route path="/resultados" element={<Resultados />} />
           <Route path="/resultados/:cicloId" element={<Resultados />} />
+          <Route path="/terminal" element={<Terminal />} />
         </Route>
       </Routes>
     </ProyectoProvider>

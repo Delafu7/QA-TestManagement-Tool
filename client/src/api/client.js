@@ -70,6 +70,47 @@ async function count(path) {
   return res.pagination ? res.pagination.total : (res.data || []).length;
 }
 
+// Consumo manual de un endpoint Server-Sent Events con fetch en vez de
+// EventSource: EventSource no permite mandar cabeceras propias, y esta app
+// autentica todo por X-User-Id (ver docs/ARCHITECTURE.md#authentication-model).
+// El formato en el cable sigue siendo SSE estándar (`event:`/`data:`); esto
+// solo cambia cómo se lee en el cliente. Devuelve un AbortController para que
+// el llamador pueda cortar la conexión (p.ej. al desmontar o al lanzar otra).
+function stream(path, onEvent) {
+  const headers = {};
+  if (usuarioId) headers['X-User-Id'] = usuarioId;
+  const controller = new AbortController();
+
+  (async () => {
+    const res = await fetch(`${BASE}${path}`, { headers, signal: controller.signal });
+    if (!res.ok || !res.body) {
+      onEvent({ event: 'error', data: { message: `Error de red (${res.status})` } });
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        const lines = frame.split('\n');
+        const eventLine = lines.find((l) => l.startsWith('event: '));
+        const dataLine = lines.find((l) => l.startsWith('data: '));
+        if (dataLine) onEvent({ event: eventLine ? eventLine.slice(7) : 'message', data: JSON.parse(dataLine.slice(6)) });
+      }
+    }
+  })().catch((err) => {
+    if (err.name !== 'AbortError') onEvent({ event: 'error', data: { message: err.message } });
+  });
+
+  return controller;
+}
+
 export const api = {
   get: (path) => request('GET', path),
   getAll: (path) => getAll(path),
@@ -77,4 +118,5 @@ export const api = {
   post: (path, body) => request('POST', path, body),
   patch: (path, body) => request('PATCH', path, body),
   delete: (path) => request('DELETE', path),
+  stream: (path, onEvent) => stream(path, onEvent),
 };

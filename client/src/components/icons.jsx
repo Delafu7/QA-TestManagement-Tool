@@ -189,6 +189,15 @@ export function IconClose({ size = 16, color = 'currentColor' }) {
   );
 }
 
+export function IconTerminal({ size = 18, color = 'currentColor' }) {
+  return (
+    <svg {...base(size)}>
+      <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" stroke={color} strokeWidth="1.6" />
+      <path d="M5.5 7.5l3 2.5-3 2.5M10.5 12.5h4" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconSettings({ size = 15, color = 'currentColor' }) {
   return (
     <svg {...base(size)}>
