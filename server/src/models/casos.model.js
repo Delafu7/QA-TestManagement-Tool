@@ -11,6 +11,7 @@ const toApiBase = (row) => ({
   precondiciones: row.precondiciones,
   prioridad: row.prioridad,
   tipo: row.tipo,
+  tipoPruebaId: row.tipo_prueba_id,
   estado: row.estado,
   autorId: row.autor_id,
   creadoEn: row.creado_en,
@@ -39,7 +40,7 @@ const findById = (id) => {
 
 const findRawById = (id) => db.prepare('SELECT * FROM casos_prueba WHERE id = ?').get(id);
 
-const list = (suiteId, { estado, prioridad, tipo, etiqueta, page, pageSize } = {}) => {
+const list = (suiteId, { estado, prioridad, tipo, tipoPruebaId, etiqueta, page, pageSize } = {}) => {
   const clauses = ['suite_id = ?'];
   const params = [suiteId];
   if (estado) {
@@ -53,6 +54,10 @@ const list = (suiteId, { estado, prioridad, tipo, etiqueta, page, pageSize } = {
   if (tipo) {
     clauses.push('tipo = ?');
     params.push(tipo);
+  }
+  if (tipoPruebaId) {
+    clauses.push('tipo_prueba_id = ?');
+    params.push(tipoPruebaId);
   }
   let join = '';
   if (etiqueta) {
@@ -85,14 +90,14 @@ const replaceEtiquetas = (casoId, etiquetaIds) => {
   }
 };
 
-const create = ({ suiteId, titulo, descripcion = null, precondiciones = null, prioridad, tipo, autorId, etiquetaIds = [], pasos }) => {
+const create = ({ suiteId, titulo, descripcion = null, precondiciones = null, prioridad, tipo, tipoPruebaId = null, autorId, etiquetaIds = [], pasos }) => {
   const id = newId();
   const timestamp = now();
   const tx = db.transaction(() => {
     db.prepare(
-      `INSERT INTO casos_prueba (id, suite_id, titulo, descripcion, precondiciones, prioridad, tipo, estado, autor_id, creado_en, actualizado_en)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'borrador', ?, ?, ?)`
-    ).run(id, suiteId, titulo, descripcion, precondiciones, prioridad, tipo, autorId, timestamp, timestamp);
+      `INSERT INTO casos_prueba (id, suite_id, titulo, descripcion, precondiciones, prioridad, tipo, tipo_prueba_id, estado, autor_id, creado_en, actualizado_en)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'borrador', ?, ?, ?)`
+    ).run(id, suiteId, titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, autorId, timestamp, timestamp);
     replacePasos(id, pasos);
     replaceEtiquetas(id, etiquetaIds);
   });
@@ -108,6 +113,7 @@ const update = (id, fields, editadoPorId) => {
   const precondiciones = fields.precondiciones ?? current.precondiciones;
   const prioridad = fields.prioridad ?? current.prioridad;
   const tipo = fields.tipo ?? current.tipo;
+  const tipoPruebaId = fields.tipoPruebaId ?? current.tipo_prueba_id;
   const tx = db.transaction(() => {
     // Snapshot del estado ANTERIOR al PATCH, para el historial de cambios de casos.
     casoVersionesModel.crearSnapshot({
@@ -117,12 +123,13 @@ const update = (id, fields, editadoPorId) => {
       precondiciones: current.precondiciones,
       prioridad: current.prioridad,
       tipo: current.tipo,
+      tipoPruebaId: current.tipo_prueba_id,
       pasos: pasosDeCaso(id),
       editadoPorId,
     });
     db.prepare(
-      'UPDATE casos_prueba SET titulo = ?, descripcion = ?, precondiciones = ?, prioridad = ?, tipo = ?, actualizado_en = ? WHERE id = ?'
-    ).run(titulo, descripcion, precondiciones, prioridad, tipo, now(), id);
+      'UPDATE casos_prueba SET titulo = ?, descripcion = ?, precondiciones = ?, prioridad = ?, tipo = ?, tipo_prueba_id = ?, actualizado_en = ? WHERE id = ?'
+    ).run(titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, now(), id);
     if (fields.pasos) replacePasos(id, fields.pasos);
     if (fields.etiquetaIds) replaceEtiquetas(id, fields.etiquetaIds);
   });

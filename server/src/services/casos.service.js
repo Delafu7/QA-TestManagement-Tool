@@ -1,4 +1,6 @@
 const casosModel = require('../models/casos.model');
+const suitesModel = require('../models/suites.model');
+const tiposPruebaModel = require('../models/tiposPrueba.model');
 const { notFound, conflict, unprocessable, badRequest } = require('../utils/errors');
 
 const list = (suiteId, query) => casosModel.list(suiteId, query);
@@ -9,22 +11,51 @@ const getById = (id) => {
   return caso;
 };
 
+// Resuelve el `tipoPruebaId` final para un caso: si el cliente lo manda explícito
+// se valida que pertenezca al proyecto del caso; si no, se intenta emparejar por el
+// slug del `tipo` legado (siempre debería existir, todo proyecto tiene los 8 tipos
+// por defecto sembrados). Si no se puede resolver nada, se deja como estaba.
+const resolverTipoPruebaId = (proyectoId, { tipoPruebaId, tipo }, actual = null) => {
+  if (tipoPruebaId) {
+    const tipoPrueba = tiposPruebaModel.findById(tipoPruebaId);
+    if (!tipoPrueba || tipoPrueba.proyectoId !== proyectoId) {
+      throw badRequest('tipoPruebaId no corresponde a un tipo de prueba de este proyecto');
+    }
+    return tipoPrueba.id;
+  }
+  if (tipo) {
+    const tipoPrueba = tiposPruebaModel.findBySlug(proyectoId, tipo);
+    if (tipoPrueba) return tipoPrueba.id;
+  }
+  return actual;
+};
+
 const create = (fields) => {
   if (!fields.pasos || fields.pasos.length === 0) {
     throw badRequest('El caso de prueba debe tener al menos un paso');
   }
-  return casosModel.create(fields);
+  const suite = suitesModel.findById(fields.suiteId);
+  if (!suite) throw notFound('Suite');
+  const tipoPruebaId = resolverTipoPruebaId(suite.proyectoId, fields);
+  return casosModel.create({ ...fields, tipoPruebaId });
 };
 
 const update = (id, fields, editadoPorId) => {
-  if (!casosModel.findRawById(id)) throw notFound('Caso de prueba');
+  const current = casosModel.findRawById(id);
+  if (!current) throw notFound('Caso de prueba');
   if (fields.pasos && casosModel.countEjecucionesHistoricas(id) > 0) {
     throw unprocessable(
       'CASO_CON_EJECUCIONES',
       'No se pueden modificar los pasos de un caso con ejecuciones asociadas; use deprecar y cree un nuevo caso si necesita cambiar el flujo'
     );
   }
-  return casosModel.update(id, fields, editadoPorId);
+  let nextFields = fields;
+  if (fields.tipoPruebaId !== undefined || fields.tipo !== undefined) {
+    const suite = suitesModel.findById(current.suite_id);
+    const tipoPruebaId = resolverTipoPruebaId(suite.proyectoId, fields, current.tipo_prueba_id);
+    nextFields = { ...fields, tipoPruebaId };
+  }
+  return casosModel.update(id, nextFields, editadoPorId);
 };
 
 const versiones = (id) => {

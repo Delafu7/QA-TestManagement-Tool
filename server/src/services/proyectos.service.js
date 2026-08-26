@@ -1,5 +1,6 @@
 const proyectosModel = require('../models/proyectos.model');
 const casoVersionesModel = require('../models/casoVersiones.model');
+const tiposPruebaModel = require('../models/tiposPrueba.model');
 const { notFound } = require('../utils/errors');
 
 const DIAS_PERIODO_DEFECTO = 7;
@@ -24,7 +25,11 @@ const getById = (id) => {
   return { ...proyecto, ...proyectosModel.metricasResumen(id) };
 };
 
-const create = (fields) => proyectosModel.create(fields);
+const create = (fields) => {
+  const proyecto = proyectosModel.create(fields);
+  tiposPruebaModel.sembrarPorDefecto(proyecto.id);
+  return proyecto;
+};
 
 const update = (id, fields) => {
   const proyecto = proyectosModel.update(id, fields);
@@ -43,4 +48,9 @@ const casosModificados = (id, { desde, hasta, page, pageSize } = {}) => {
   return casoVersionesModel.modificadosEnPeriodo(id, { ...periodo, page, pageSize });
 };
 
-module.exports = { list, getById, create, update, archivar, casosModificados };
+const resumenPorTipoPrueba = (id) => {
+  if (!proyectosModel.findById(id)) throw notFound('Proyecto');
+  return proyectosModel.resumenPorTipoPrueba(id);
+};
+
+module.exports = { list, getById, create, update, archivar, casosModificados, resumenPorTipoPrueba };

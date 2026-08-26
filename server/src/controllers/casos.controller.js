@@ -3,8 +3,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { badRequest } = require('../utils/errors');
 
 const list = asyncHandler(async (req, res) => {
-  const { estado, prioridad, tipo, etiqueta, page, pageSize } = req.query;
-  res.json(casosService.list(req.params.suiteId, { estado, prioridad, tipo, etiqueta, page, pageSize }));
+  const { estado, prioridad, tipo, tipoPruebaId, etiqueta, page, pageSize } = req.query;
+  res.json(casosService.list(req.params.suiteId, { estado, prioridad, tipo, tipoPruebaId, etiqueta, page, pageSize }));
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -12,7 +12,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { titulo, descripcion, precondiciones, prioridad, tipo, etiquetaIds, autorId, pasos } = req.body;
+  const { titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, etiquetaIds, autorId, pasos } = req.body;
   if (!titulo || !prioridad || !tipo || !autorId) {
     throw badRequest('titulo, prioridad, tipo y autorId son obligatorios');
   }
@@ -24,6 +24,7 @@ const create = asyncHandler(async (req, res) => {
       precondiciones,
       prioridad,
       tipo,
+      tipoPruebaId,
       etiquetaIds,
       autorId,
       pasos,

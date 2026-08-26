@@ -5,6 +5,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { ciclosApi } from '../../api/ciclosApi';
 import { exportApi } from '../../api/exportApi';
 import EstadoBadge from '../../components/EstadoBadge';
+import TipoPruebaBadge from '../../components/TipoPruebaBadge';
 import { IconFileJson, IconFileMd, IconNotion } from '../../components/icons';
 import NotionExportModal from './NotionExportModal';
 
@@ -76,6 +77,7 @@ export default function Resultados() {
                 <tr>
                   <th>Caso</th>
                   <th>Suite</th>
+                  <th>Tipo de prueba</th>
                   <th>Estado</th>
                   <th>Ejecutor</th>
                   <th>Fecha</th>
@@ -84,12 +86,13 @@ export default function Resultados() {
               </thead>
               <tbody>
                 {payload.ejecuciones.length === 0 && (
-                  <tr><td colSpan={6}><div className="center-state">Este ciclo todavía no tiene ejecuciones.</div></td></tr>
+                  <tr><td colSpan={7}><div className="center-state">Este ciclo todavía no tiene ejecuciones.</div></td></tr>
                 )}
                 {payload.ejecuciones.map((e) => (
                   <tr key={e.id}>
                     <td style={{ fontWeight: 500 }}>{e.casoTitulo}</td>
                     <td style={{ color: 'var(--text-2)' }}>{e.suiteNombre}</td>
+                    <td><TipoPruebaBadge tipoPrueba={e.tipoPrueba} size="sm" /></td>
                     <td><EstadoBadge estado={e.estado} size="sm" /></td>
                     <td style={{ color: 'var(--text-2)' }}>{e.ejecutor || '—'}</td>
                     <td style={{ color: 'var(--text-2)' }}>{e.fechaEjecucion ? e.fechaEjecucion.slice(0, 10) : '—'}</td>

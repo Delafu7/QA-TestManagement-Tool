@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { ciclosApi } from '../../api/ciclosApi';
 import { ejecucionesApi } from '../../api/ejecucionesApi';
 import { casosApi } from '../../api/casosApi';
+import { tiposPruebaApi } from '../../api/tiposPruebaApi';
 import { IconArrowLeft, IconCheck, IconCross, IconBlock, IconSkip, IconClock, IconWarning } from '../../components/icons';
 import DefectoFormModal from './DefectoFormModal';
+import TipoPruebaBadge from '../../components/TipoPruebaBadge';
 
 const ESTADO_ICON = { passed: IconCheck, failed: IconCross, blocked: IconBlock, skipped: IconSkip };
 const ESTADO_COLOR = {
@@ -34,6 +36,7 @@ export default function EjecucionCiclo() {
 
   const [ciclo, setCiclo] = useState(null);
   const [cola, setCola] = useState(null);
+  const [tiposPrueba, setTiposPrueba] = useState(null);
   const [error, setError] = useState(null);
 
   const [seleccionId, setSeleccionId] = useState(null);
@@ -54,6 +57,9 @@ export default function EjecucionCiclo() {
       ejecucionesApi.list(cicloId),
     ]);
     setCiclo(cicloRes);
+    if (cicloRes.proyectoId) {
+      tiposPruebaApi.list(cicloRes.proyectoId).then(setTiposPrueba).catch(() => setTiposPrueba([]));
+    }
 
     const casoIds = [...new Set(ejecucionesRes.data.map((e) => e.casoId))];
     const casosMap = new Map();
@@ -207,7 +213,9 @@ export default function EjecucionCiclo() {
                   <div style={{ fontSize: 12.5, fontWeight: activo ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {e.caso?.titulo}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', textTransform: 'capitalize' }}>{e.caso?.tipo}</div>
+                  <div style={{ marginTop: 3 }}>
+                    <TipoPruebaBadge tipoPrueba={tiposPrueba?.find((t) => t.id === e.tipoPruebaId)} size="sm" />
+                  </div>
                 </div>
               </div>
             );
@@ -324,7 +332,12 @@ export default function EjecucionCiclo() {
       </div>
 
       {modalDefecto && (
-        <DefectoFormModal ejecucionId={ejecucionActual.id} onClose={() => setModalDefecto(false)} onCreado={() => setModalDefecto(false)} />
+        <DefectoFormModal
+          ejecucionId={ejecucionActual.id}
+          tipoPrueba={tiposPrueba?.find((t) => t.id === ejecucionActual.tipoPruebaId)}
+          onClose={() => setModalDefecto(false)}
+          onCreado={() => setModalDefecto(false)}
+        />
       )}
     </div>
   );

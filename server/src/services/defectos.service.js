@@ -1,6 +1,8 @@
 const defectosModel = require('../models/defectos.model');
 const ejecucionesModel = require('../models/ejecuciones.model');
-const { notFound, conflict } = require('../utils/errors');
+const proyectosModel = require('../models/proyectos.model');
+const tiposPruebaModel = require('../models/tiposPrueba.model');
+const { notFound, conflict, badRequest } = require('../utils/errors');
 
 const list = (proyectoId, query) => defectosModel.list(proyectoId, query);
 
@@ -17,6 +19,27 @@ const createFromEjecucion = (ejecucionId, { titulo, descripcion, severidad, repo
   return defectosModel.create({
     proyectoId,
     ejecucionOrigenId: ejecucionId,
+    // El tipo de prueba se hereda siempre de la ejecución de origen: no se acepta
+    // como entrada manual cuando el defecto viene de una ejecución.
+    tipoPruebaId: ejecucion.tipo_prueba_id,
+    titulo,
+    descripcion,
+    severidad,
+    reportadoPorId,
+  });
+};
+
+const createStandalone = (proyectoId, { tipoPruebaId, titulo, descripcion, severidad, reportadoPorId }) => {
+  if (!proyectosModel.findById(proyectoId)) throw notFound('Proyecto');
+  if (!tipoPruebaId) throw badRequest('tipoPruebaId es obligatorio al reportar un defecto sin ejecución de origen');
+  const tipoPrueba = tiposPruebaModel.findById(tipoPruebaId);
+  if (!tipoPrueba || tipoPrueba.proyectoId !== proyectoId) {
+    throw badRequest('tipoPruebaId no corresponde a un tipo de prueba de este proyecto');
+  }
+  return defectosModel.create({
+    proyectoId,
+    ejecucionOrigenId: null,
+    tipoPruebaId,
     titulo,
     descripcion,
     severidad,
@@ -39,4 +62,4 @@ const resolver = (id) => transicion(id, { en_progreso: 'resuelto' });
 const verificar = (id) => transicion(id, { resuelto: 'cerrado' });
 const reabrir = (id) => transicion(id, { resuelto: 'reabierto' });
 
-module.exports = { list, getById, createFromEjecucion, asignar, resolver, verificar, reabrir };
+module.exports = { list, getById, createFromEjecucion, createStandalone, asignar, resolver, verificar, reabrir };

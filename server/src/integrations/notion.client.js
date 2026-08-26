@@ -7,6 +7,7 @@ const buildProperties = (ejecucion, cicloNombre) => ({
   Nombre: { title: [{ text: { content: ejecucion.casoTitulo } }] },
   Suite: { rich_text: [{ text: { content: ejecucion.suiteNombre } }] },
   Prioridad: { select: { name: ejecucion.prioridad } },
+  'Tipo de prueba': { select: ejecucion.tipoPrueba ? { name: ejecucion.tipoPrueba.nombre } : null },
   Estado: { select: { name: ejecucion.estado } },
   Ejecutor: { rich_text: [{ text: { content: ejecucion.ejecutor || '' } }] },
   ...(ejecucion.fechaEjecucion ? { Fecha: { date: { start: ejecucion.fechaEjecucion } } } : {}),

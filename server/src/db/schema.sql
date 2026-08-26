@@ -38,6 +38,17 @@ CREATE TABLE IF NOT EXISTS suites (
   actualizado_en TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tipos_prueba (
+  id TEXT PRIMARY KEY,
+  proyecto_id TEXT NOT NULL REFERENCES proyectos(id),
+  nombre TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  color TEXT NOT NULL,
+  archivado INTEGER NOT NULL DEFAULT 0,
+  creado_en TEXT NOT NULL,
+  UNIQUE (proyecto_id, slug)
+);
+
 CREATE TABLE IF NOT EXISTS casos_prueba (
   id TEXT PRIMARY KEY,
   suite_id TEXT NOT NULL REFERENCES suites(id),
@@ -46,6 +57,7 @@ CREATE TABLE IF NOT EXISTS casos_prueba (
   precondiciones TEXT,
   prioridad TEXT NOT NULL CHECK (prioridad IN ('alta', 'media', 'baja')),
   tipo TEXT NOT NULL CHECK (tipo IN ('funcional', 'regresion', 'humo', 'exploratorio')),
+  tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   estado TEXT NOT NULL CHECK (estado IN ('borrador', 'activo', 'obsoleto')) DEFAULT 'borrador',
   autor_id TEXT NOT NULL REFERENCES usuarios(id),
   creado_en TEXT NOT NULL,
@@ -75,6 +87,7 @@ CREATE TABLE IF NOT EXISTS caso_versiones (
   precondiciones TEXT,
   prioridad TEXT NOT NULL,
   tipo TEXT NOT NULL,
+  tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   pasos_json TEXT NOT NULL,
   editado_por_id TEXT NOT NULL REFERENCES usuarios(id),
   creado_en TEXT NOT NULL
@@ -101,6 +114,7 @@ CREATE TABLE IF NOT EXISTS ejecuciones (
   caso_id TEXT NOT NULL REFERENCES casos_prueba(id),
   ejecutor_id TEXT REFERENCES usuarios(id),
   estado TEXT NOT NULL CHECK (estado IN ('pendiente', 'en_progreso', 'passed', 'failed', 'blocked', 'skipped')) DEFAULT 'pendiente',
+  tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   fecha_ejecucion TEXT,
   duracion_segundos INTEGER,
   comentario TEXT,
@@ -120,6 +134,7 @@ CREATE TABLE IF NOT EXISTS defectos (
   id TEXT PRIMARY KEY,
   proyecto_id TEXT NOT NULL REFERENCES proyectos(id),
   ejecucion_origen_id TEXT REFERENCES ejecuciones(id),
+  tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   titulo TEXT NOT NULL,
   descripcion TEXT,
   severidad TEXT NOT NULL CHECK (severidad IN ('critica', 'alta', 'media', 'baja')),
@@ -129,6 +144,7 @@ CREATE TABLE IF NOT EXISTS defectos (
   actualizado_en TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_tipos_prueba_proyecto ON tipos_prueba(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_etiquetas_proyecto ON etiquetas(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_suites_proyecto ON suites(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_suites_padre ON suites(suite_padre_id);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import TagPicker from '../../components/TagPicker';
+import TipoPruebaSelect from '../../components/TipoPruebaSelect';
 import { casosApi } from '../../api/casosApi';
 import { useUsuario } from '../../context/UsuarioContext';
 import { IconPlus, IconClose } from '../../components/icons';
@@ -16,7 +17,7 @@ export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCre
   const [descripcion, setDescripcion] = useState(caso?.descripcion || '');
   const [precondiciones, setPrecondiciones] = useState(caso?.precondiciones || '');
   const [prioridad, setPrioridad] = useState(caso?.prioridad || 'media');
-  const [tipo, setTipo] = useState(caso?.tipo || 'funcional');
+  const [tipoPruebaId, setTipoPruebaId] = useState(caso?.tipoPruebaId || null);
   const [pasos, setPasos] = useState(caso?.pasos?.length ? caso.pasos.map((p) => ({ accion: p.accion, resultadoEsperado: p.resultadoEsperado })) : [PASO_VACIO()]);
   const [etiquetaIds, setEtiquetaIds] = useState(caso?.etiquetaIds || []);
   const [guardando, setGuardando] = useState(false);
@@ -44,7 +45,7 @@ export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCre
           descripcion,
           precondiciones,
           prioridad,
-          tipo,
+          tipoPruebaId,
           etiquetaIds,
           pasos: pasosPayload,
         });
@@ -55,7 +56,11 @@ export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCre
           descripcion,
           precondiciones,
           prioridad,
-          tipo,
+          // `tipo` es un campo legado que ya no se edita desde el formulario (ver
+          // TipoPruebaSelect); se manda un valor válido fijo solo para satisfacer la
+          // restricción NOT NULL de la columna, el tipo real es `tipoPruebaId`.
+          tipo: 'funcional',
+          tipoPruebaId,
           etiquetaIds,
           autorId: usuario.id,
           pasos: pasosPayload,
@@ -97,25 +102,16 @@ export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCre
           <label htmlFor="c-pre">Precondiciones</label>
           <textarea id="c-pre" rows={2} value={precondiciones} onChange={(e) => setPrecondiciones(e.target.value)} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div className="field">
-            <label htmlFor="c-prio">Prioridad</label>
-            <select id="c-prio" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
-              <option value="alta">Alta</option>
-              <option value="media">Media</option>
-              <option value="baja">Baja</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="c-tipo">Tipo</label>
-            <select id="c-tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-              <option value="funcional">Funcional</option>
-              <option value="regresion">Regresión</option>
-              <option value="humo">Humo</option>
-              <option value="exploratorio">Exploratorio</option>
-            </select>
-          </div>
+        <div className="field">
+          <label htmlFor="c-prio">Prioridad</label>
+          <select id="c-prio" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
         </div>
+
+        <TipoPruebaSelect proyectoId={proyectoId} value={tipoPruebaId} onChange={setTipoPruebaId} />
 
         <div className="field">
           <label>Pasos</label>

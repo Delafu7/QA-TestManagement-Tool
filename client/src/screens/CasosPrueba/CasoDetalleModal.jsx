@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
 import EstadoBadge from '../../components/EstadoBadge';
 import TagList from '../../components/TagList';
+import TipoPruebaBadge from '../../components/TipoPruebaBadge';
 import CasoFormModal from './CasoFormModal';
 import { casosApi } from '../../api/casosApi';
 import { ejecucionesApi } from '../../api/ejecucionesApi';
+import { tiposPruebaApi } from '../../api/tiposPruebaApi';
 import { useUsuario } from '../../context/UsuarioContext';
 
 export default function CasoDetalleModal({ casoId, proyectoId, suites, onClose, onCambiado }) {
   const { usuario } = useUsuario();
   const [caso, setCaso] = useState(null);
   const [historial, setHistorial] = useState(null);
+  const [tiposPrueba, setTiposPrueba] = useState(null);
   const [error, setError] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [editando, setEditando] = useState(false);
@@ -18,6 +21,8 @@ export default function CasoDetalleModal({ casoId, proyectoId, suites, onClose, 
   useEffect(() => {
     casosApi.getById(casoId).then(setCaso).catch((e) => setError(e.message));
     ejecucionesApi.listByCaso(casoId).then(({ data }) => setHistorial(data)).catch(() => setHistorial([]));
+    if (proyectoId) tiposPruebaApi.list(proyectoId).then(setTiposPrueba).catch(() => setTiposPrueba([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [casoId]);
 
   const suiteActual = suites?.find((s) => s.id === caso?.suiteId);
@@ -45,7 +50,7 @@ export default function CasoDetalleModal({ casoId, proyectoId, suites, onClose, 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
             <EstadoBadge estado={caso.estado} />
             <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Prioridad: <strong style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{caso.prioridad}</strong></span>
-            <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Tipo: <strong style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{caso.tipo}</strong></span>
+            <TipoPruebaBadge tipoPrueba={tiposPrueba?.find((t) => t.id === caso.tipoPruebaId)} />
             {usuario.rol === 'qa' && (
               <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setEditando(true)}>Editar</button>
             )}

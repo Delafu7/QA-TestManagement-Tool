@@ -15,4 +15,5 @@ export const proyectosApi = {
   // Widget "casos modificados" del dashboard: recuento agregado en servidor sobre
   // TODO el histórico de versiones del periodo, no una página ya recortada.
   casosModificados: (id, { desde, hasta } = {}) => api.get(`/proyectos/${id}/casos-modificados${toQuery({ desde, hasta, pageSize: 5 })}`),
+  resumenPorTipoPrueba: (id) => api.get(`/proyectos/${id}/resumen-tipos-prueba`),
 };

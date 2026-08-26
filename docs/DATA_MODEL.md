@@ -59,7 +59,8 @@ Hierarchical grouping of test cases (a suite can have sub-suites via `suite_padr
 | `descripcion` | string \| null | no | |
 | `precondiciones` | string \| null | no | |
 | `prioridad` | enum: `alta`, `media`, `baja` | yes | |
-| `tipo` | enum: `funcional`, `regresion`, `humo`, `exploratorio` | yes | |
+| `tipo` | enum: `funcional`, `regresion`, `humo`, `exploratorio` | yes | **Legado/deprecado.** Se mantiene por compatibilidad hacia atrás (columna original, con su `CHECK` de 4 valores intacto) pero ya no es la fuente de verdad: úsese `tipo_prueba_id`. En un caso creado con un tipo fuera de esos 4 valores, `tipo` queda fijo en `'funcional'` como marcador de posición para satisfacer la restricción de la columna. |
+| `tipo_prueba_id` | FK → [Tipo de prueba](#111-tipo-de-prueba-testing-type) \| null | no | Tipo de prueba real del caso. Si se omite al crear/editar, se resuelve automáticamente emparejando el slug de `tipo` con un tipo del mismo proyecto. |
 | `estado` | enum: `borrador`, `activo`, `obsoleto` | yes | See [state machine](#31-test-case) |
 | `autor_id` | FK → Usuario | yes | |
 | `creado_en`, `actualizado_en` | datetime | yes | |
@@ -104,6 +105,7 @@ An instance of a test case within a cycle — the unit that gets reported and ex
 | `caso_id` | FK → Caso de prueba | yes | |
 | `ejecutor_id` | FK → Usuario \| null | no | Assigned when taken |
 | `estado` | enum: `pendiente`, `en_progreso`, `passed`, `failed`, `blocked`, `skipped` | yes | See [state machine](#33-execution) |
+| `tipo_prueba_id` | FK → [Tipo de prueba](#111-tipo-de-prueba-testing-type) \| null | no | **Foto fija** del `tipo_prueba_id` del caso en el momento de crear la ejecución (al asignar el caso a un ciclo). Si el caso se re-tipa después, esta ejecución conserva el tipo con el que realmente se ejecutó. |
 | `fecha_ejecucion` | datetime \| null | no | Filled when closed |
 | `duracion_segundos` | integer \| null | no | |
 | `comentario` | string \| null | no | |
@@ -128,12 +130,29 @@ An instance of a test case within a cycle — the unit that gets reported and ex
 | `id` | UUID | yes | |
 | `proyecto_id` | FK → Proyecto | yes | |
 | `ejecucion_origen_id` | FK → Ejecución \| null | no | Execution that detected it, if any |
+| `tipo_prueba_id` | FK → [Tipo de prueba](#111-tipo-de-prueba-testing-type) \| null | no | Heredado automáticamente de `ejecucion_origen_id.tipo_prueba_id` cuando el defecto se reporta desde una ejecución (`POST /ejecuciones/:id/defectos`, sin entrada manual posible). Obligatorio y seleccionable cuando se reporta sin ejecución de origen (`POST /proyectos/:id/defectos`). `null` solo en defectos reportados sin este campo antes de existir (no se inventa un valor retroactivo). |
 | `titulo` | string | yes | |
 | `descripcion` | string \| null | no | |
 | `severidad` | enum: `critica`, `alta`, `media`, `baja` | yes | |
 | `estado` | enum: `abierto`, `en_progreso`, `resuelto`, `cerrado`, `reabierto` | yes | See [state machine](#34-defect) |
 | `reportado_por_id` | FK → Usuario | yes | |
 | `creado_en`, `actualizado_en` | datetime | yes | |
+
+### 1.11 Tipo de prueba (Testing type)
+
+Dimensión gestionada y filtrable del tipo de testing (funcional, regresión, humo, exploratorio, integración, rendimiento, usabilidad, accesibilidad) — sustituye al antiguo campo suelto `Caso.tipo` como fuente de verdad, sin eliminarlo (ver nota de compatibilidad en [1.5](#15-caso-de-prueba-test-case)).
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | UUID | yes | |
+| `proyecto_id` | FK → Proyecto | yes | Cada proyecto tiene su propio set de tipos, igual que `Etiqueta` |
+| `nombre` | string | yes | |
+| `slug` | string | yes | Derivado de `nombre`; único por proyecto |
+| `color` | string (hex) | yes | |
+| `archivado` | boolean | yes | Un tipo archivado deja de poder asignarse a casos nuevos, pero los registros históricos que ya lo usaban lo conservan |
+| `creado_en` | datetime | yes | |
+
+Cada proyecto se siembra automáticamente, al crearse, con 8 tipos por defecto: `funcional`, `regresion`, `humo`, `exploratorio`, `integracion`, `rendimiento`, `usabilidad`, `accesibilidad` (los 4 primeros con el mismo slug que los valores históricos de `Caso.tipo`, para que el backfill de una base existente pueda emparejarlos exactamente).
 
 ## 2. Entity relationship diagram
 
@@ -149,6 +168,7 @@ erDiagram
     PROYECTO ||--o{ ETIQUETA : defines
     PROYECTO ||--o{ CICLO : plans
     PROYECTO ||--o{ DEFECTO : groups
+    PROYECTO ||--o{ TIPO_PRUEBA : defines
 
     SUITE ||--o{ SUITE : "sub-suite of"
     SUITE ||--o{ CASO_PRUEBA : contains
@@ -156,6 +176,9 @@ erDiagram
     CASO_PRUEBA ||--|{ PASO : defines
     CASO_PRUEBA }o--o{ ETIQUETA : "tagged with"
     CASO_PRUEBA ||--o{ EJECUCION : "run as"
+    TIPO_PRUEBA ||--o{ CASO_PRUEBA : types
+    TIPO_PRUEBA ||--o{ EJECUCION : "snapshot on"
+    TIPO_PRUEBA ||--o{ DEFECTO : types
 
     CICLO ||--o{ EJECUCION : groups
 
@@ -234,6 +257,9 @@ stateDiagram-v2
 3. `Ejecucion.caso_id` must reference a case whose `estado != obsoleto` at creation time.
 4. `resultadosPaso` submitted when closing an Execution must cover the same set of `pasoId`s as `Caso.pasos` at the time the execution was created.
 5. A Defect with a non-null `ejecucion_origen_id` inherits its `proyecto_id` transitively (execution → case → suite → project).
+6. `Caso.tipo_prueba_id` / `Defecto.tipo_prueba_id`, when provided, must reference a `TipoPrueba` belonging to the same project (`400` otherwise).
+7. A Defect with a non-null `ejecucion_origen_id` always inherits `tipo_prueba_id` from that execution — it cannot be set manually on that request. A Defect with `ejecucion_origen_id = null` (standalone) requires `tipo_prueba_id` in the request body (`400` if missing).
+8. `Ejecucion.tipo_prueba_id` is fixed at creation time from `Caso.tipo_prueba_id` and never changes afterward, even if the case is later re-typed (see [1.8](#18-ejecución-execution)).
 
 ## 5. Derived fields (computed by the API, not persisted)
 

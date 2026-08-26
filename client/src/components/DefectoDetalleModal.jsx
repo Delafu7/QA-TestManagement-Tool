@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import EstadoBadge from './EstadoBadge';
+import TipoPruebaBadge from './TipoPruebaBadge';
 import { defectosApi } from '../api/defectosApi';
+import { tiposPruebaApi } from '../api/tiposPruebaApi';
 import { useUsuario } from '../context/UsuarioContext';
 
 const SEV_COLOR = { critica: 'var(--fail)', alta: 'var(--fail)', media: 'var(--block)', baja: 'var(--skip)' };
@@ -10,11 +12,15 @@ const SEV_BG = { critica: 'var(--fail-bg)', alta: 'var(--fail-bg)', media: 'var(
 export default function DefectoDetalleModal({ defectoId, onClose, onCambiado }) {
   const { usuario } = useUsuario();
   const [defecto, setDefecto] = useState(null);
+  const [tiposPrueba, setTiposPrueba] = useState(null);
   const [error, setError] = useState(null);
   const [procesando, setProcesando] = useState(false);
 
   useEffect(() => {
-    defectosApi.getById(defectoId).then(setDefecto).catch((e) => setError(e.message));
+    defectosApi.getById(defectoId).then((d) => {
+      setDefecto(d);
+      tiposPruebaApi.list(d.proyectoId).then(setTiposPrueba).catch(() => setTiposPrueba([]));
+    }).catch((e) => setError(e.message));
   }, [defectoId]);
 
   async function transicionar(accion) {
@@ -45,6 +51,7 @@ export default function DefectoDetalleModal({ defectoId, onClose, onCambiado }) 
             >
               {defecto.severidad}
             </span>
+            <TipoPruebaBadge tipoPrueba={tiposPrueba?.find((t) => t.id === defecto.tipoPruebaId)} />
           </div>
 
           {defecto.descripcion && (

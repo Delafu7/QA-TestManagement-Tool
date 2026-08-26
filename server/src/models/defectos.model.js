@@ -6,6 +6,7 @@ const toApi = (row) => ({
   id: row.id,
   proyectoId: row.proyecto_id,
   ejecucionOrigenId: row.ejecucion_origen_id,
+  tipoPruebaId: row.tipo_prueba_id,
   titulo: row.titulo,
   descripcion: row.descripcion,
   severidad: row.severidad,
@@ -20,7 +21,7 @@ const findById = (id) => {
   return row ? toApi(row) : null;
 };
 
-const list = (proyectoId, { estado, severidad, page, pageSize } = {}) => {
+const list = (proyectoId, { estado, severidad, tipoPruebaId, page, pageSize } = {}) => {
   const clauses = ['proyecto_id = ?'];
   const params = [proyectoId];
   if (estado) {
@@ -31,6 +32,10 @@ const list = (proyectoId, { estado, severidad, page, pageSize } = {}) => {
     clauses.push('severidad = ?');
     params.push(severidad);
   }
+  if (tipoPruebaId) {
+    clauses.push('tipo_prueba_id = ?');
+    params.push(tipoPruebaId);
+  }
   const where = clauses.join(' AND ');
   const { page: p, pageSize: ps, offset } = parsePagination({ page, pageSize });
   const total = db.prepare(`SELECT COUNT(*) AS n FROM defectos WHERE ${where}`).get(...params).n;
@@ -40,13 +45,13 @@ const list = (proyectoId, { estado, severidad, page, pageSize } = {}) => {
   return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
-const create = ({ proyectoId, ejecucionOrigenId = null, titulo, descripcion = null, severidad, reportadoPorId }) => {
+const create = ({ proyectoId, ejecucionOrigenId = null, tipoPruebaId = null, titulo, descripcion = null, severidad, reportadoPorId }) => {
   const id = newId();
   const timestamp = now();
   db.prepare(
-    `INSERT INTO defectos (id, proyecto_id, ejecucion_origen_id, titulo, descripcion, severidad, estado, reportado_por_id, creado_en, actualizado_en)
-     VALUES (?, ?, ?, ?, ?, ?, 'abierto', ?, ?, ?)`
-  ).run(id, proyectoId, ejecucionOrigenId, titulo, descripcion, severidad, reportadoPorId, timestamp, timestamp);
+    `INSERT INTO defectos (id, proyecto_id, ejecucion_origen_id, tipo_prueba_id, titulo, descripcion, severidad, estado, reportado_por_id, creado_en, actualizado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'abierto', ?, ?, ?)`
+  ).run(id, proyectoId, ejecucionOrigenId, tipoPruebaId, titulo, descripcion, severidad, reportadoPorId, timestamp, timestamp);
   return findById(id);
 };
 

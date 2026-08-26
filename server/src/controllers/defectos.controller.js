@@ -3,8 +3,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { badRequest } = require('../utils/errors');
 
 const list = asyncHandler(async (req, res) => {
-  const { estado, severidad, page, pageSize } = req.query;
-  res.json(defectosService.list(req.params.proyectoId, { estado, severidad, page, pageSize }));
+  const { estado, severidad, tipoPruebaId, page, pageSize } = req.query;
+  res.json(defectosService.list(req.params.proyectoId, { estado, severidad, tipoPruebaId, page, pageSize }));
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -18,6 +18,16 @@ const createFromEjecucion = asyncHandler(async (req, res) => {
   }
   res.status(201).json(
     defectosService.createFromEjecucion(req.params.id, { titulo, descripcion, severidad, reportadoPorId })
+  );
+});
+
+const createStandalone = asyncHandler(async (req, res) => {
+  const { titulo, descripcion, severidad, reportadoPorId, tipoPruebaId } = req.body;
+  if (!titulo || !severidad || !reportadoPorId) {
+    throw badRequest('titulo, severidad y reportadoPorId son obligatorios');
+  }
+  res.status(201).json(
+    defectosService.createStandalone(req.params.proyectoId, { titulo, descripcion, severidad, reportadoPorId, tipoPruebaId })
   );
 });
 
@@ -37,4 +47,4 @@ const reabrir = asyncHandler(async (req, res) => {
   res.json(defectosService.reabrir(req.params.id));
 });
 
-module.exports = { list, getById, createFromEjecucion, asignar, resolver, verificar, reabrir };
+module.exports = { list, getById, createFromEjecucion, createStandalone, asignar, resolver, verificar, reabrir };

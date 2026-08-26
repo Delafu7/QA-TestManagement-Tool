@@ -89,6 +89,7 @@ Error messages in responses are in Spanish (they come straight from the service 
 | POST | `/api/proyectos` | Create |
 | PATCH | `/api/proyectos/:id` | Update (rename, edit description) |
 | PATCH | `/api/proyectos/:id/archivar` | Transition to `archivado` |
+| GET | `/api/proyectos/:id/resumen-tipos-prueba` | Dashboard rollup: for every testing type in the project, execution counts by `estado` (`passed`/`failed`/`blocked`/`skipped`), `tasaExito`, and count of open defects (`estado != 'cerrado'`) — aggregated across the whole project, not just the active cycle |
 
 **POST body**
 ```json
@@ -102,6 +103,23 @@ Error messages in responses are in Spanish (they come straight from the service 
 | GET | `/api/proyectos/:proyectoId/etiquetas` | List |
 | POST | `/api/proyectos/:proyectoId/etiquetas` | Create — body `{ "nombre", "color" }` |
 | DELETE | `/api/etiquetas/:id` | Delete |
+
+## Testing types — `/api/proyectos/:proyectoId/tipos-prueba`, `/api/tipos-prueba/:id`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/proyectos/:proyectoId/tipos-prueba` | List (plain array, not paginated — small, project-scoped set) |
+| GET | `/api/tipos-prueba/:id` | Detail |
+| POST | `/api/proyectos/:proyectoId/tipos-prueba` | Create — body `{ "nombre", "color" }` |
+| PATCH | `/api/tipos-prueba/:id` | Update `nombre`/`color` (re-slugs if `nombre` changes) |
+| PATCH | `/api/tipos-prueba/:id/archivar` | One-way archive (like `proyectos/:id/archivar`) — an archived type can no longer be assigned to new cases/defects, but existing records that reference it keep it |
+
+Every project is seeded automatically, on creation, with 8 default types: `funcional`, `regresion`, `humo`, `exploratorio`, `integracion`, `rendimiento`, `usabilidad`, `accesibilidad`.
+
+**POST body**
+```json
+{ "nombre": "Rendimiento", "color": "#DC2626" }
+```
 
 ## Suites — `/api/proyectos/:proyectoId/suites`, `/api/suites/:id`
 
@@ -122,7 +140,7 @@ Error messages in responses are in Spanish (they come straight from the service 
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/suites/:suiteId/casos` | List. Query: `estado`, `prioridad`, `tipo`, `etiqueta` |
+| GET | `/api/suites/:suiteId/casos` | List. Query: `estado`, `prioridad`, `tipo`, `tipoPruebaId`, `etiqueta` |
 | GET | `/api/casos/:id` | Detail, including `pasos` |
 | POST | `/api/suites/:suiteId/casos` | Create (starts in `borrador`) |
 | PATCH | `/api/casos/:id` | Edit fields and/or replace `pasos` |
@@ -139,6 +157,7 @@ Error messages in responses are in Spanish (they come straight from the service 
   "precondiciones": "Usuario registrado y activo",
   "prioridad": "alta",
   "tipo": "funcional",
+  "tipoPruebaId": "tp-1",
   "etiquetaIds": ["et-1"],
   "autorId": "u-123",
   "pasos": [
@@ -147,6 +166,7 @@ Error messages in responses are in Spanish (they come straight from the service 
   ]
 }
 ```
+`tipo` is legacy (kept only for backward compatibility, still constrained to its original 4 values) and `tipoPruebaId` is optional — when omitted, the server resolves it automatically by matching `tipo`'s slug to a testing type in the same project. `tipoPruebaId`, when given, must reference a testing type belonging to the case's project (`400` otherwise).
 
 ## Testing cycles — `/api/proyectos/:proyectoId/ciclos`, `/api/ciclos/:id`
 
@@ -176,7 +196,7 @@ Error messages in responses are in Spanish (they come straight from the service 
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/ciclos/:cicloId/ejecuciones` | List. Query: `estado`, `ejecutorId` |
+| GET | `/api/ciclos/:cicloId/ejecuciones` | List. Query: `estado`, `ejecutorId`, `tipoPruebaId` |
 | GET | `/api/casos/:casoId/ejecuciones` | Full execution history of a case across all cycles, most recent first (includes desnormalized `cicloNombre`, `ejecutorNombre`) |
 | GET | `/api/ejecuciones/:id` | Detail, including `resultadosPaso` |
 | PATCH | `/api/ejecuciones/:id/tomar` | `pendiente → en_progreso`; assigns `ejecutorId` to the caller |
@@ -197,21 +217,29 @@ Error messages in responses are in Spanish (they come straight from the service 
 ```
 `422` if `resultadosPaso` doesn't cover every `pasoId` of the case; `409` if the execution isn't currently `en_progreso`.
 
+`tipoPruebaId` is fixed on every execution at creation time (`POST /ciclos/:id/casos`), copied from the case's `tipoPruebaId` at that moment. It never changes afterward, even if the case is later re-typed — historical executions keep the type they were actually run under.
+
 ## Defects — `/api/proyectos/:proyectoId/defectos`, `/api/defectos/:id`, `/api/ejecuciones/:id/defectos`
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/proyectos/:proyectoId/defectos` | List. Query: `estado`, `severidad` |
+| GET | `/api/proyectos/:proyectoId/defectos` | List. Query: `estado`, `severidad`, `tipoPruebaId` |
 | GET | `/api/defectos/:id` | Detail |
-| POST | `/api/ejecuciones/:id/defectos` | File a defect from a (typically failed) execution |
+| POST | `/api/ejecuciones/:id/defectos` | File a defect from a (typically failed) execution — `tipoPruebaId` is always inherited from the execution, it cannot be set in this request |
+| POST | `/api/proyectos/:proyectoId/defectos` | File a standalone defect (no origin execution) — `tipoPruebaId` is required in the body (`400` if missing or if it doesn't belong to the project) |
 | PATCH | `/api/defectos/:id/asignar` | `abierto → en_progreso` |
 | PATCH | `/api/defectos/:id/resolver` | `en_progreso → resuelto` |
 | PATCH | `/api/defectos/:id/verificar` | `resuelto → cerrado` |
 | PATCH | `/api/defectos/:id/reabrir` | `resuelto → reabierto` |
 
-**POST body**
+**POST `/ejecuciones/:id/defectos` body**
 ```json
 { "titulo": "Login no redirige tras éxito", "descripcion": "...", "severidad": "alta", "reportadoPorId": "u-123" }
+```
+
+**POST `/proyectos/:proyectoId/defectos` body**
+```json
+{ "titulo": "Rendimiento degradado en la pantalla de pagos", "descripcion": "...", "severidad": "media", "reportadoPorId": "u-123", "tipoPruebaId": "tp-6" }
 ```
 
 ## Export — `/api/ciclos/:cicloId/export/*`
@@ -222,7 +250,7 @@ Error messages in responses are in Spanish (they come straight from the service 
 | GET | `/api/ciclos/:cicloId/export/markdown` | `200`, `text/markdown`, downloadable |
 | POST | `/api/ciclos/:cicloId/export/notion` | Pushes every closed execution (`passed`/`failed`/`blocked`/`skipped`) in the cycle into a Notion database as one page each |
 
-Both JSON and Markdown exports name the downloaded file `{project-slug}_{cycle-slug}_{yyyy-mm-dd}.{ext}`.
+Both JSON and Markdown exports name the downloaded file `{project-slug}_{cycle-slug}_{yyyy-mm-dd}.{ext}`. Every execution (and its associated defects, if any) in the export carries its testing type — JSON as a nested `tipoPrueba: { id, nombre, slug, color }` (`null` if the execution predates this feature and the migration couldn't backfill one), Markdown as a "Tipo de prueba" column, and Notion as a `Tipo de prueba` select property on each page.
 
 **POST `/export/notion` body**
 ```json
@@ -243,6 +271,7 @@ Both JSON and Markdown exports name the downloaded file `{project-slug}_{cycle-s
 | User | `/api/usuarios` |
 | Project | `/api/proyectos` |
 | Tag | `/api/proyectos/:proyectoId/etiquetas`, `/api/etiquetas/:id` |
+| Testing type | `/api/proyectos/:proyectoId/tipos-prueba`, `/api/tipos-prueba/:id` |
 | Suite | `/api/proyectos/:proyectoId/suites`, `/api/suites/:id` |
 | Test case | `/api/suites/:suiteId/casos`, `/api/casos/:id` |
 | Testing cycle | `/api/proyectos/:proyectoId/ciclos`, `/api/ciclos/:id` |

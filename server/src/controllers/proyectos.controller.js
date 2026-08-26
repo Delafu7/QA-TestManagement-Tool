@@ -30,4 +30,8 @@ const casosModificados = asyncHandler(async (req, res) => {
   res.json(proyectosService.casosModificados(req.params.id, { desde, hasta, page, pageSize }));
 });
 
-module.exports = { list, getById, create, update, archivar, casosModificados };
+const resumenPorTipoPrueba = asyncHandler(async (req, res) => {
+  res.json(proyectosService.resumenPorTipoPrueba(req.params.id));
+});
+
+module.exports = { list, getById, create, update, archivar, casosModificados, resumenPorTipoPrueba };

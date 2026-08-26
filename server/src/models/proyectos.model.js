@@ -76,4 +76,49 @@ const metricasResumen = (id) => {
   return { totalSuites, totalCasos, ciclosActivos };
 };
 
-module.exports = { findById, list, create, update, setEstado, metricasResumen };
+// Desglose de ejecuciones (pass/fail/blocked/skipped) y defectos abiertos por tipo de
+// prueba, para el bloque del dashboard. Se agrega sobre TODAS las ejecuciones/defectos
+// del proyecto (no solo el ciclo activo), igual que `metricasResumen`.
+const resumenPorTipoPrueba = (id) => {
+  const ejecucionesPorTipo = db
+    .prepare(
+      `SELECT tp.id AS tipo_prueba_id, tp.nombre, tp.slug, tp.color, tp.archivado,
+              SUM(CASE WHEN e.estado = 'passed' THEN 1 ELSE 0 END) AS passed,
+              SUM(CASE WHEN e.estado = 'failed' THEN 1 ELSE 0 END) AS failed,
+              SUM(CASE WHEN e.estado = 'blocked' THEN 1 ELSE 0 END) AS blocked,
+              SUM(CASE WHEN e.estado = 'skipped' THEN 1 ELSE 0 END) AS skipped
+       FROM tipos_prueba tp
+       LEFT JOIN ejecuciones e ON e.tipo_prueba_id = tp.id
+       WHERE tp.proyecto_id = ?
+       GROUP BY tp.id
+       ORDER BY tp.nombre`
+    )
+    .all(id);
+
+  const defectosAbiertosPorTipo = new Map(
+    db
+      .prepare(
+        `SELECT tipo_prueba_id, COUNT(*) AS n FROM defectos
+         WHERE proyecto_id = ? AND estado != 'cerrado' AND tipo_prueba_id IS NOT NULL
+         GROUP BY tipo_prueba_id`
+      )
+      .all(id)
+      .map((r) => [r.tipo_prueba_id, r.n])
+  );
+
+  return ejecucionesPorTipo.map((r) => ({
+    tipoPruebaId: r.tipo_prueba_id,
+    nombre: r.nombre,
+    slug: r.slug,
+    color: r.color,
+    archivado: !!r.archivado,
+    passed: r.passed,
+    failed: r.failed,
+    blocked: r.blocked,
+    skipped: r.skipped,
+    tasaExito: r.passed + r.failed > 0 ? r.passed / (r.passed + r.failed) : null,
+    defectosAbiertos: defectosAbiertosPorTipo.get(r.tipo_prueba_id) || 0,
+  }));
+};
+
+module.exports = { findById, list, create, update, setEstado, metricasResumen, resumenPorTipoPrueba };

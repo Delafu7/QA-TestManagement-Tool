@@ -4,8 +4,10 @@ import { useUsuario } from '../../context/UsuarioContext';
 import { suitesApi } from '../../api/suitesApi';
 import { casosApi } from '../../api/casosApi';
 import { etiquetasApi } from '../../api/etiquetasApi';
+import { tiposPruebaApi } from '../../api/tiposPruebaApi';
 import { flattenSuites } from '../../utils/suites';
 import EstadoBadge from '../../components/EstadoBadge';
+import TipoPruebaBadge from '../../components/TipoPruebaBadge';
 import { IconPlus, IconSearch } from '../../components/icons';
 import CrearProyectoModal from '../../components/CrearProyectoModal';
 import CrearSuiteModal from '../../components/CrearSuiteModal';
@@ -24,11 +26,12 @@ export default function CasosListado() {
   const [suites, setSuites] = useState(null);
   const [casos, setCasos] = useState(null);
   const [etiquetas, setEtiquetas] = useState(null);
+  const [tiposPrueba, setTiposPrueba] = useState(null);
   const [error, setError] = useState(null);
 
   const [filtroSuite, setFiltroSuite] = useState('');
   const [filtroPrioridad, setFiltroPrioridad] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('');
+  const [filtroTipoPrueba, setFiltroTipoPrueba] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('');
   const [busqueda, setBusqueda] = useState('');
@@ -42,12 +45,14 @@ export default function CasosListado() {
     if (!proyectoId) return;
     setError(null);
     try {
-      const [{ data: suitesData }, { data: etiquetasData }] = await Promise.all([
+      const [{ data: suitesData }, { data: etiquetasData }, tiposPruebaData] = await Promise.all([
         suitesApi.tree(proyectoId),
         etiquetasApi.list(proyectoId),
+        tiposPruebaApi.list(proyectoId),
       ]);
       setSuites(suitesData);
       setEtiquetas(etiquetasData);
+      setTiposPrueba(tiposPruebaData);
       const flat = flattenSuites(suitesData);
       if (flat.length === 0) {
         setCasos([]);
@@ -70,7 +75,7 @@ export default function CasosListado() {
   const casosFiltrados = (casos || []).filter((c) => {
     if (filtroSuite && c.suiteId !== filtroSuite) return false;
     if (filtroPrioridad && c.prioridad !== filtroPrioridad) return false;
-    if (filtroTipo && c.tipo !== filtroTipo) return false;
+    if (filtroTipoPrueba && c.tipoPruebaId !== filtroTipoPrueba) return false;
     if (filtroEstado && c.estado !== filtroEstado) return false;
     if (filtroEtiqueta && !c.etiquetaIds?.includes(filtroEtiqueta)) return false;
     if (busqueda && !c.titulo.toLowerCase().includes(busqueda.toLowerCase())) return false;
@@ -140,13 +145,12 @@ export default function CasosListado() {
               <option value="media">Media</option>
               <option value="baja">Baja</option>
             </select>
-            <select className="chip" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
-              <option value="">Tipo: todos</option>
-              <option value="funcional">Funcional</option>
-              <option value="regresion">Regresión</option>
-              <option value="humo">Humo</option>
-              <option value="exploratorio">Exploratorio</option>
-            </select>
+            {tiposPrueba?.length > 0 && (
+              <select className="chip" value={filtroTipoPrueba} onChange={(e) => setFiltroTipoPrueba(e.target.value)}>
+                <option value="">Tipo de prueba: todos</option>
+                {tiposPrueba.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+              </select>
+            )}
             <select className="chip" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
               <option value="">Estado: todos</option>
               <option value="borrador">Borrador</option>
@@ -174,7 +178,7 @@ export default function CasosListado() {
                   <th>Título</th>
                   <th>Suite</th>
                   <th>Prioridad</th>
-                  <th>Tipo</th>
+                  <th>Tipo de prueba</th>
                   <th>Estado</th>
                 </tr>
               </thead>
@@ -215,7 +219,7 @@ export default function CasosListado() {
                         {c.prioridad}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-2)', textTransform: 'capitalize' }}>{c.tipo}</td>
+                    <td><TipoPruebaBadge tipoPrueba={tiposPrueba?.find((t) => t.id === c.tipoPruebaId)} size="sm" /></td>
                     <td><EstadoBadge estado={c.estado} size="sm" /></td>
                   </tr>
                 ))}

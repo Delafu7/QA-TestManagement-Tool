@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
+import TipoPruebaBadge from '../../components/TipoPruebaBadge';
 import { defectosApi } from '../../api/defectosApi';
 import { useUsuario } from '../../context/UsuarioContext';
 
-export default function DefectoFormModal({ ejecucionId, onClose, onCreado }) {
+export default function DefectoFormModal({ ejecucionId, tipoPrueba, onClose, onCreado }) {
   const { usuario } = useUsuario();
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -30,6 +31,13 @@ export default function DefectoFormModal({ ejecucionId, onClose, onCreado }) {
   return (
     <Modal title="Reportar defecto" onClose={onClose}>
       {error && <div className="alert alert-error">{error}</div>}
+      <div className="field">
+        <label>Tipo de prueba</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TipoPruebaBadge tipoPrueba={tipoPrueba} />
+          <span style={{ fontSize: 11.5, color: 'var(--text-2)' }}>heredado de la ejecución</span>
+        </div>
+      </div>
       <form onSubmit={submit}>
         <div className="field">
           <label htmlFor="d-titulo">Título</label>

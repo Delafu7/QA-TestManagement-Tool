@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
+const { migrarTiposPrueba } = require('./migrarTiposPrueba');
 
 const dbPath = process.env.SQLITE_DB_PATH || path.join(__dirname, '../../data/qa-tool.sqlite');
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -18,5 +19,7 @@ const ciclosColumns = db.prepare('PRAGMA table_info(ciclos)').all().map((c) => c
 if (!ciclosColumns.includes('comentario')) {
   db.exec('ALTER TABLE ciclos ADD COLUMN comentario TEXT');
 }
+
+migrarTiposPrueba(db);
 
 module.exports = db;

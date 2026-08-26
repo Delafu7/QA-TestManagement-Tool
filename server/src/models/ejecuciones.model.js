@@ -8,6 +8,7 @@ const toApiBase = (row) => ({
   casoId: row.caso_id,
   ejecutorId: row.ejecutor_id,
   estado: row.estado,
+  tipoPruebaId: row.tipo_prueba_id,
   fechaEjecucion: row.fecha_ejecucion,
   duracionSegundos: row.duracion_segundos,
   comentario: row.comentario,
@@ -37,7 +38,7 @@ const findById = (id) => {
 
 const findRawById = (id) => db.prepare('SELECT * FROM ejecuciones WHERE id = ?').get(id);
 
-const list = (cicloId, { estado, ejecutorId, page, pageSize } = {}) => {
+const list = (cicloId, { estado, ejecutorId, tipoPruebaId, page, pageSize } = {}) => {
   const clauses = ['ciclo_id = ?'];
   const params = [cicloId];
   if (estado) {
@@ -47,6 +48,10 @@ const list = (cicloId, { estado, ejecutorId, page, pageSize } = {}) => {
   if (ejecutorId) {
     clauses.push('ejecutor_id = ?');
     params.push(ejecutorId);
+  }
+  if (tipoPruebaId) {
+    clauses.push('tipo_prueba_id = ?');
+    params.push(tipoPruebaId);
   }
   const where = clauses.join(' AND ');
   const { page: p, pageSize: ps, offset } = parsePagination({ page, pageSize });
@@ -79,15 +84,20 @@ const listByCaso = (casoId, { page, pageSize } = {}) => {
 
 const createBulk = (cicloId, casoIds) => {
   const insert = db.prepare(
-    `INSERT INTO ejecuciones (id, ciclo_id, caso_id, estado, creado_en, actualizado_en)
-     VALUES (?, ?, ?, 'pendiente', ?, ?)`
+    `INSERT INTO ejecuciones (id, ciclo_id, caso_id, estado, tipo_prueba_id, creado_en, actualizado_en)
+     VALUES (?, ?, ?, 'pendiente', ?, ?, ?)`
   );
+  const tipoPruebaDelCaso = db.prepare('SELECT tipo_prueba_id FROM casos_prueba WHERE id = ?');
   const timestamp = now();
   const ids = [];
   const tx = db.transaction(() => {
     for (const casoId of casoIds) {
       const id = newId();
-      insert.run(id, cicloId, casoId, timestamp, timestamp);
+      // Foto del tipo de prueba del caso en el momento de crear la ejecución: si el
+      // caso se re-tipa más adelante, esta ejecución histórica conserva el tipo con el
+      // que realmente se ejecutó.
+      const tipoPruebaId = tipoPruebaDelCaso.get(casoId).tipo_prueba_id;
+      insert.run(id, cicloId, casoId, tipoPruebaId, timestamp, timestamp);
       ids.push(id);
     }
   });

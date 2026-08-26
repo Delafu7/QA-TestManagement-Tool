@@ -2,8 +2,8 @@ const ejecucionesService = require('../services/ejecuciones.service');
 const asyncHandler = require('../utils/asyncHandler');
 
 const list = asyncHandler(async (req, res) => {
-  const { estado, ejecutorId, page, pageSize } = req.query;
-  res.json(ejecucionesService.list(req.params.cicloId, { estado, ejecutorId, page, pageSize }));
+  const { estado, ejecutorId, tipoPruebaId, page, pageSize } = req.query;
+  res.json(ejecucionesService.list(req.params.cicloId, { estado, ejecutorId, tipoPruebaId, page, pageSize }));
 });
 
 const getById = asyncHandler(async (req, res) => {
