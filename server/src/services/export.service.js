@@ -1,7 +1,6 @@
 const db = require('../db/connection');
 const ciclosModel = require('../models/ciclos.model');
 const proyectosModel = require('../models/proyectos.model');
-const usuariosModel = require('../models/usuarios.model');
 const { notFound } = require('../utils/errors');
 const { now } = require('../utils/ids');
 
@@ -10,13 +9,12 @@ const buildEjecucionesExport = (cicloId) => {
     .prepare(
       `SELECT
          e.id, e.caso_id AS casoId, c.titulo AS casoTitulo, s.nombre AS suiteNombre,
-         c.prioridad, c.tipo, e.estado, u.nombre AS ejecutor,
+         c.prioridad, c.tipo, e.estado,
          e.fecha_ejecucion AS fechaEjecucion, e.duracion_segundos AS duracionSegundos, e.comentario,
          tp.id AS tipoPruebaId, tp.nombre AS tipoPruebaNombre, tp.slug AS tipoPruebaSlug, tp.color AS tipoPruebaColor
        FROM ejecuciones e
        JOIN casos_prueba c ON c.id = e.caso_id
        JOIN suites s ON s.id = c.suite_id
-       LEFT JOIN usuarios u ON u.id = e.ejecutor_id
        LEFT JOIN tipos_prueba tp ON tp.id = e.tipo_prueba_id
        WHERE e.ciclo_id = ?`
     )
@@ -51,7 +49,6 @@ const buildEjecucionesExport = (cicloId) => {
     tipo: row.tipo,
     tipoPrueba: tipoPruebaDe(row),
     estado: row.estado,
-    ejecutor: row.ejecutor || null,
     fechaEjecucion: row.fechaEjecucion,
     duracionSegundos: row.duracionSegundos,
     comentario: row.comentario || '',
@@ -66,13 +63,12 @@ const buildEjecucionesExport = (cicloId) => {
   }));
 };
 
-const buildExportPayload = (cicloId, exportadoPorId) => {
+const buildExportPayload = (cicloId) => {
   const ciclo = ciclosModel.findById(cicloId);
   if (!ciclo) throw notFound('Fase/Ciclo');
   const proyecto = proyectosModel.findById(ciclo.proyectoId);
   const resumen = ciclosModel.metricas(cicloId);
   const ejecuciones = buildEjecucionesExport(cicloId);
-  const exportadoPor = usuariosModel.findById(exportadoPorId);
 
   return {
     ciclo: {
@@ -87,7 +83,6 @@ const buildExportPayload = (cicloId, exportadoPorId) => {
     resumen,
     ejecuciones,
     exportadoEn: now(),
-    exportadoPor: exportadoPor ? exportadoPor.nombre : null,
   };
 };
 
@@ -102,18 +97,17 @@ const toMarkdown = (payload) => {
     `**Periodo:** ${ciclo.fechaInicio} → ${ciclo.fechaFinPrevista}`,
     `**Resumen:** ${resumen.totalCasos} casos · ${resumen.passed} passed · ${resumen.failed} failed · ${resumen.blocked} blocked · ${resumen.skipped} skipped · Tasa de éxito: ${tasaExitoPct}%`,
     '',
-    '| Caso | Suite | Tipo de prueba | Prioridad | Estado | Ejecutor | Fecha | Duración (s) | Defecto | Comentario |',
-    '|---|---|---|---|---|---|---|---|---|---|',
+    '| Caso | Suite | Tipo de prueba | Prioridad | Estado | Fecha | Duración (s) | Defecto | Comentario |',
+    '|---|---|---|---|---|---|---|---|---|',
   ];
   for (const e of ejecuciones) {
     const defecto = e.defectos[0] ? e.defectos[0].id : '—';
     const comentario = e.comentario || '—';
-    const ejecutor = e.ejecutor || '—';
     const fecha = e.fechaEjecucion ? e.fechaEjecucion.slice(0, 10) : '—';
     const duracion = e.duracionSegundos ?? '—';
     const tipoPrueba = e.tipoPrueba ? e.tipoPrueba.nombre : '—';
     lines.push(
-      `| ${e.casoTitulo} | ${e.suiteNombre} | ${tipoPrueba} | ${e.prioridad} | ${e.estado} | ${ejecutor} | ${fecha} | ${duracion} | ${defecto} | ${comentario} |`
+      `| ${e.casoTitulo} | ${e.suiteNombre} | ${tipoPrueba} | ${e.prioridad} | ${e.estado} | ${fecha} | ${duracion} | ${defecto} | ${comentario} |`
     );
   }
   return lines.join('\n') + '\n';

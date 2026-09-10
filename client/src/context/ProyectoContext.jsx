@@ -1,12 +1,10 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { proyectosApi } from '../api/proyectosApi';
-import { useUsuario } from './UsuarioContext';
 
 const STORAGE_KEY = 'qa-tool:proyectoId';
 const ProyectoContext = createContext(null);
 
 export function ProyectoProvider({ children }) {
-  const { usuario } = useUsuario();
   const [proyectos, setProyectos] = useState([]);
   const [proyectoId, setProyectoId] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -27,8 +25,8 @@ export function ProyectoProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (usuario) cargar();
-  }, [usuario, cargar]);
+    cargar();
+  }, [cargar]);
 
   const seleccionarProyecto = useCallback((id) => {
     setProyectoId(id);

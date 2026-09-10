@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProyecto } from '../../context/ProyectoContext';
-import { useUsuario } from '../../context/UsuarioContext';
 import { useFetch } from '../../hooks/useFetch';
 import { proyectosApi } from '../../api/proyectosApi';
 import { ciclosApi } from '../../api/ciclosApi';
@@ -45,8 +44,6 @@ function Kpi({ label, value, Icon, color, bg }) {
 
 export default function Dashboard() {
   const { proyectoId, proyectoActual, cargando: cargandoProyecto } = useProyecto();
-  const { usuario } = useUsuario();
-  const isGestor = usuario?.rol === 'gestor';
 
   const { data: proyectoDetalle } = useFetch(
     () => (proyectoId ? proyectosApi.getById(proyectoId) : Promise.resolve(null)),
@@ -95,8 +92,8 @@ export default function Dashboard() {
   );
 
   const { data: cobertura } = useFetch(
-    () => (isGestor && cicloActivoResumen ? ciclosApi.coberturaPorSuite(cicloActivoResumen.id) : Promise.resolve(null)),
-    [isGestor, cicloActivoResumen?.id]
+    () => (cicloActivoResumen ? ciclosApi.coberturaPorSuite(cicloActivoResumen.id) : Promise.resolve(null)),
+    [cicloActivoResumen?.id]
   );
 
   if (cargandoProyecto) return <div className="center-state">Cargando&hellip;</div>;
@@ -117,20 +114,20 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <div className="page-subtitle">{proyectoActual.nombre} &middot; vista de {usuario.rol}</div>
+          <div className="page-subtitle">{proyectoActual.nombre}</div>
         </div>
-        {!isGestor && cicloActivoResumen && (
-          <Link to="/fases" className="btn btn-primary">
-            <IconPlus size={15} color="white" />
-            Continuar ejecutando
-          </Link>
-        )}
-        {isGestor && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {cicloActivoResumen && (
+            <Link to="/fases" className="btn btn-primary">
+              <IconPlus size={15} color="white" />
+              Continuar ejecutando
+            </Link>
+          )}
           <Link to="/resultados" className="btn btn-ghost">
             <IconDownload size={15} />
             Exportar resultados
           </Link>
-        )}
+        </div>
       </div>
 
       <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginBottom: 24 }}>
@@ -140,7 +137,7 @@ export default function Dashboard() {
         <Kpi label="Defectos abiertos" value={totalDefectosAbiertos ?? '—'} Icon={IconBug} color="var(--fail)" bg="var(--fail-bg)" />
       </div>
 
-      {ciclos && ciclos.data.length === 0 && !isGestor && (
+      {ciclos && ciclos.data.length === 0 && (
         <div className="card center-state" style={{ marginBottom: 24 }}>
           <p>Todavía no hay ninguna fase en este proyecto.</p>
           <Link to="/fases" className="btn btn-primary">Crear la primera fase</Link>
@@ -178,7 +175,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {isGestor && cicloActivoResumen && (
+      {cicloActivoResumen && (
         <div className="card" style={{ padding: '18px 20px', marginBottom: 24 }}>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Cobertura por suite &middot; ciclo actual</div>
           {cobertura === null && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Cargando&hellip;</div>}

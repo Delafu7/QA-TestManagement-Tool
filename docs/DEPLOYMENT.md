@@ -42,7 +42,7 @@ services:
       - /path/on/the/host/to/your/projects:/workspace:ro
 ```
 
-A read-only (`:ro`) bind mount is enough for anything that only reads source and runs tests; drop `:ro` only if a suite needs to write into the workspace (e.g. writing coverage output back to disk). Mounting the host's project directories into the `server` container is what makes "navigate registered project directories and run their test suites" possible — it also means the container gains read (or read/write) access to whatever is mounted there, on top of the existing accepted risk that `X-User-Id` can be spoofed by anything with network access to the API. Don't mount anything wider than the QA workspaces themselves.
+A read-only (`:ro`) bind mount is enough for anything that only reads source and runs tests; drop `:ro` only if a suite needs to write into the workspace (e.g. writing coverage output back to disk). Mounting the host's project directories into the `server` container is what makes "navigate registered project directories and run their test suites" possible — it also means the container gains read (or read/write) access to whatever is mounted there, on top of the existing accepted risk that the API has no authentication at all. Don't mount anything wider than the QA workspaces themselves.
 
 ## Environment variables (Docker)
 
@@ -66,7 +66,7 @@ Every API request and select business events (e.g. `ejecucion_cerrada`) are writ
 
 **Example — HTTP request log line:**
 ```json
-{"timestamp":"2026-08-21T09:15:32.481Z","level":"info","service":"qa-tool-server","tipo":"http_request","metodo":"PATCH","ruta":"/api/ejecuciones/ej-3392/resultado","statusCode":200,"duracionMs":48,"usuarioId":"u-123"}
+{"timestamp":"2026-08-21T09:15:32.481Z","level":"info","service":"qa-tool-server","tipo":"http_request","metodo":"PATCH","ruta":"/api/ejecuciones/ej-3392/resultado","statusCode":200,"duracionMs":48}
 ```
 
 **Example — application error log line:**
@@ -119,7 +119,7 @@ There is no offsite copy — `./backups/` is local to the Docker host. If the ho
 
 Before running this anywhere beyond a trusted local network, review:
 
-- [ ] No real authentication — see [docs/ARCHITECTURE.md#authentication-model](ARCHITECTURE.md#authentication-model)
+- [ ] No authentication at all (single-user app) — see [docs/ARCHITECTURE.md#single-user-model](ARCHITECTURE.md#single-user-model)
 - [ ] No TLS anywhere in the stack (client↔server, or within ELK)
 - [ ] Backups are local-only (see "Backups" above) — no offsite copy
 - [ ] SQLite has no encryption at rest

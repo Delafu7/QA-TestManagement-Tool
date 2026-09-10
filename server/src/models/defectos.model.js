@@ -11,7 +11,6 @@ const toApi = (row) => ({
   descripcion: row.descripcion,
   severidad: row.severidad,
   estado: row.estado,
-  reportadoPorId: row.reportado_por_id,
   creadoEn: row.creado_en,
   actualizadoEn: row.actualizado_en,
 });
@@ -45,13 +44,13 @@ const list = (proyectoId, { estado, severidad, tipoPruebaId, page, pageSize } = 
   return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
-const create = ({ proyectoId, ejecucionOrigenId = null, tipoPruebaId = null, titulo, descripcion = null, severidad, reportadoPorId }) => {
+const create = ({ proyectoId, ejecucionOrigenId = null, tipoPruebaId = null, titulo, descripcion = null, severidad }) => {
   const id = newId();
   const timestamp = now();
   db.prepare(
-    `INSERT INTO defectos (id, proyecto_id, ejecucion_origen_id, tipo_prueba_id, titulo, descripcion, severidad, estado, reportado_por_id, creado_en, actualizado_en)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'abierto', ?, ?, ?)`
-  ).run(id, proyectoId, ejecucionOrigenId, tipoPruebaId, titulo, descripcion, severidad, reportadoPorId, timestamp, timestamp);
+    `INSERT INTO defectos (id, proyecto_id, ejecucion_origen_id, tipo_prueba_id, titulo, descripcion, severidad, estado, creado_en, actualizado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'abierto', ?, ?)`
+  ).run(id, proyectoId, ejecucionOrigenId, tipoPruebaId, titulo, descripcion, severidad, timestamp, timestamp);
   return findById(id);
 };
 

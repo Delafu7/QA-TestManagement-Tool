@@ -4,13 +4,11 @@ import EstadoBadge from './EstadoBadge';
 import TipoPruebaBadge from './TipoPruebaBadge';
 import { defectosApi } from '../api/defectosApi';
 import { tiposPruebaApi } from '../api/tiposPruebaApi';
-import { useUsuario } from '../context/UsuarioContext';
 
 const SEV_COLOR = { critica: 'var(--fail)', alta: 'var(--fail)', media: 'var(--block)', baja: 'var(--skip)' };
 const SEV_BG = { critica: 'var(--fail-bg)', alta: 'var(--fail-bg)', media: 'var(--block-bg)', baja: 'var(--skip-bg)' };
 
 export default function DefectoDetalleModal({ defectoId, onClose, onCambiado }) {
-  const { usuario } = useUsuario();
   const [defecto, setDefecto] = useState(null);
   const [tiposPrueba, setTiposPrueba] = useState(null);
   const [error, setError] = useState(null);
@@ -58,22 +56,20 @@ export default function DefectoDetalleModal({ defectoId, onClose, onCambiado }) 
             <p style={{ fontSize: 13.5, color: 'var(--text)', marginTop: 0 }}>{defecto.descripcion}</p>
           )}
 
-          {usuario.rol === 'qa' && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
-              {['abierto', 'reabierto'].includes(defecto.estado) && (
-                <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(defectosApi.asignar)}>Asignar a mí</button>
-              )}
-              {defecto.estado === 'en_progreso' && (
-                <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(defectosApi.resolver)}>Marcar resuelto</button>
-              )}
-              {defecto.estado === 'resuelto' && (
-                <>
-                  <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(defectosApi.verificar)}>Verificar y cerrar</button>
-                  <button className="btn btn-ghost" disabled={procesando} onClick={() => transicionar(defectosApi.reabrir)}>Reabrir</button>
-                </>
-              )}
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
+            {['abierto', 'reabierto'].includes(defecto.estado) && (
+              <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(defectosApi.asignar)}>Asignar a mí</button>
+            )}
+            {defecto.estado === 'en_progreso' && (
+              <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(defectosApi.resolver)}>Marcar resuelto</button>
+            )}
+            {defecto.estado === 'resuelto' && (
+              <>
+                <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(defectosApi.verificar)}>Verificar y cerrar</button>
+                <button className="btn btn-ghost" disabled={procesando} onClick={() => transicionar(defectosApi.reabrir)}>Reabrir</button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </Modal>

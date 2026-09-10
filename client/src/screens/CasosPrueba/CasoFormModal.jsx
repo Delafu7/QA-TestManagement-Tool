@@ -3,13 +3,11 @@ import Modal from '../../components/Modal';
 import TagPicker from '../../components/TagPicker';
 import TipoPruebaSelect from '../../components/TipoPruebaSelect';
 import { casosApi } from '../../api/casosApi';
-import { useUsuario } from '../../context/UsuarioContext';
 import { IconPlus, IconClose } from '../../components/icons';
 
 const PASO_VACIO = () => ({ accion: '', resultadoEsperado: '' });
 
 export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCreado, onGuardado }) {
-  const { usuario } = useUsuario();
   const editando = Boolean(caso);
   const suiteActual = suites.find((s) => s.id === caso?.suiteId);
   const [suiteId, setSuiteId] = useState(caso?.suiteId || suites[0]?.id || '');
@@ -62,7 +60,6 @@ export default function CasoFormModal({ proyectoId, suites, caso, onClose, onCre
           tipo: 'funcional',
           tipoPruebaId,
           etiquetaIds,
-          autorId: usuario.id,
           pasos: pasosPayload,
         });
         onCreado(nuevo);

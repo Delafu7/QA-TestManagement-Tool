@@ -1,20 +1,12 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS usuarios (
-  id TEXT PRIMARY KEY,
-  nombre TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  rol TEXT NOT NULL CHECK (rol IN ('qa', 'gestor')),
-  avatar_url TEXT,
-  activo INTEGER NOT NULL DEFAULT 1,
-  creado_en TEXT NOT NULL
-);
+-- Herramienta single-user, local-first: no hay tabla `usuarios`, ni roles, ni
+-- atribución de autoría. Cada instalación asume un único operador local.
 
 CREATE TABLE IF NOT EXISTS proyectos (
   id TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   descripcion TEXT,
-  propietario_id TEXT NOT NULL REFERENCES usuarios(id),
   estado TEXT NOT NULL CHECK (estado IN ('activo', 'archivado')) DEFAULT 'activo',
   creado_en TEXT NOT NULL,
   actualizado_en TEXT NOT NULL
@@ -59,7 +51,6 @@ CREATE TABLE IF NOT EXISTS casos_prueba (
   tipo TEXT NOT NULL CHECK (tipo IN ('funcional', 'regresion', 'humo', 'exploratorio')),
   tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   estado TEXT NOT NULL CHECK (estado IN ('borrador', 'activo', 'obsoleto')) DEFAULT 'borrador',
-  autor_id TEXT NOT NULL REFERENCES usuarios(id),
   creado_en TEXT NOT NULL,
   actualizado_en TEXT NOT NULL
 );
@@ -89,7 +80,6 @@ CREATE TABLE IF NOT EXISTS caso_versiones (
   tipo TEXT NOT NULL,
   tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   pasos_json TEXT NOT NULL,
-  editado_por_id TEXT NOT NULL REFERENCES usuarios(id),
   creado_en TEXT NOT NULL
 );
 
@@ -102,7 +92,6 @@ CREATE TABLE IF NOT EXISTS ciclos (
   fecha_inicio TEXT NOT NULL,
   fecha_fin_prevista TEXT NOT NULL,
   fecha_fin_real TEXT,
-  responsable_id TEXT NOT NULL REFERENCES usuarios(id),
   comentario TEXT,
   creado_en TEXT NOT NULL,
   actualizado_en TEXT NOT NULL
@@ -112,7 +101,6 @@ CREATE TABLE IF NOT EXISTS ejecuciones (
   id TEXT PRIMARY KEY,
   ciclo_id TEXT NOT NULL REFERENCES ciclos(id),
   caso_id TEXT NOT NULL REFERENCES casos_prueba(id),
-  ejecutor_id TEXT REFERENCES usuarios(id),
   estado TEXT NOT NULL CHECK (estado IN ('pendiente', 'en_progreso', 'passed', 'failed', 'blocked', 'skipped')) DEFAULT 'pendiente',
   tipo_prueba_id TEXT REFERENCES tipos_prueba(id),
   fecha_ejecucion TEXT,
@@ -139,7 +127,6 @@ CREATE TABLE IF NOT EXISTS defectos (
   descripcion TEXT,
   severidad TEXT NOT NULL CHECK (severidad IN ('critica', 'alta', 'media', 'baja')),
   estado TEXT NOT NULL CHECK (estado IN ('abierto', 'en_progreso', 'resuelto', 'cerrado', 'reabierto')) DEFAULT 'abierto',
-  reportado_por_id TEXT NOT NULL REFERENCES usuarios(id),
   creado_en TEXT NOT NULL,
   actualizado_en TEXT NOT NULL
 );
@@ -157,8 +144,7 @@ CREATE TABLE IF NOT EXISTS runner_runs (
   salida TEXT NOT NULL DEFAULT '',
   salida_truncada INTEGER NOT NULL DEFAULT 0,
   iniciado_en TEXT NOT NULL,
-  finalizado_en TEXT,
-  iniciado_por_id TEXT NOT NULL REFERENCES usuarios(id)
+  finalizado_en TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_tipos_prueba_proyecto ON tipos_prueba(proyecto_id);

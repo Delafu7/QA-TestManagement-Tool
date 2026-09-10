@@ -12,9 +12,9 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { nombre, descripcion, propietarioId } = req.body;
-  if (!nombre || !propietarioId) throw badRequest('nombre y propietarioId son obligatorios');
-  res.status(201).json(proyectosService.create({ nombre, descripcion, propietarioId }));
+  const { nombre, descripcion } = req.body;
+  if (!nombre) throw badRequest('nombre es obligatorio');
+  res.status(201).json(proyectosService.create({ nombre, descripcion }));
 });
 
 const update = asyncHandler(async (req, res) => {

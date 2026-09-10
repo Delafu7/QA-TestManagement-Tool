@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ciclosApi } from '../../api/ciclosApi';
-import { useUsuario } from '../../context/UsuarioContext';
 
 export default function CicloFormModal({ proyectoId, onClose, onCreado }) {
-  const { usuario } = useUsuario();
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
@@ -18,7 +16,7 @@ export default function CicloFormModal({ proyectoId, onClose, onCreado }) {
     setError(null);
     try {
       const ciclo = await ciclosApi.create(proyectoId, {
-        nombre, descripcion, fechaInicio, fechaFinPrevista, responsableId: usuario.id,
+        nombre, descripcion, fechaInicio, fechaFinPrevista,
       });
       onCreado(ciclo);
     } catch (err) {

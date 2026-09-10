@@ -12,22 +12,22 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const createFromEjecucion = asyncHandler(async (req, res) => {
-  const { titulo, descripcion, severidad, reportadoPorId } = req.body;
-  if (!titulo || !severidad || !reportadoPorId) {
-    throw badRequest('titulo, severidad y reportadoPorId son obligatorios');
+  const { titulo, descripcion, severidad } = req.body;
+  if (!titulo || !severidad) {
+    throw badRequest('titulo y severidad son obligatorios');
   }
   res.status(201).json(
-    defectosService.createFromEjecucion(req.params.id, { titulo, descripcion, severidad, reportadoPorId })
+    defectosService.createFromEjecucion(req.params.id, { titulo, descripcion, severidad })
   );
 });
 
 const createStandalone = asyncHandler(async (req, res) => {
-  const { titulo, descripcion, severidad, reportadoPorId, tipoPruebaId } = req.body;
-  if (!titulo || !severidad || !reportadoPorId) {
-    throw badRequest('titulo, severidad y reportadoPorId son obligatorios');
+  const { titulo, descripcion, severidad, tipoPruebaId } = req.body;
+  if (!titulo || !severidad) {
+    throw badRequest('titulo y severidad son obligatorios');
   }
   res.status(201).json(
-    defectosService.createStandalone(req.params.proyectoId, { titulo, descripcion, severidad, reportadoPorId, tipoPruebaId })
+    defectosService.createStandalone(req.params.proyectoId, { titulo, descripcion, severidad, tipoPruebaId })
   );
 });
 

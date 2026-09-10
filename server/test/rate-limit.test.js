@@ -8,17 +8,14 @@ process.env.RATE_LIMIT_WINDOW_MS = '60000';
 process.env.RATE_LIMIT_MAX = '3';
 
 const testServer = require('./helpers/testServer');
-const { crearUsuario } = require('./helpers/fixtures');
 
 test.before(testServer.start);
 test.after(testServer.stop);
 
 test('supera el límite de peticiones y devuelve 429 con el código RATE_LIMITED', async () => {
-  const qa = await crearUsuario('qa'); // ya consume 1 petición del límite (POST /api/usuarios)
-
   const restantes = [];
   for (let i = 0; i < 5; i += 1) {
-    restantes.push(await testServer.request('GET', '/api/proyectos', { usuarioId: qa.id }));
+    restantes.push(await testServer.request('GET', '/api/proyectos'));
   }
 
   const estados = restantes.map((r) => r.status);

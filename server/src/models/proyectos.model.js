@@ -6,7 +6,6 @@ const toApi = (row) => ({
   id: row.id,
   nombre: row.nombre,
   descripcion: row.descripcion,
-  propietarioId: row.propietario_id,
   estado: row.estado,
   creadoEn: row.creado_en,
   actualizadoEn: row.actualizado_en,
@@ -33,12 +32,12 @@ const list = ({ estado, page, pageSize } = {}) => {
   return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
-const create = ({ nombre, descripcion = null, propietarioId }) => {
+const create = ({ nombre, descripcion = null }) => {
   const id = newId();
   const timestamp = now();
   db.prepare(
-    'INSERT INTO proyectos (id, nombre, descripcion, propietario_id, estado, creado_en, actualizado_en) VALUES (?, ?, ?, ?, \'activo\', ?, ?)'
-  ).run(id, nombre, descripcion, propietarioId, timestamp, timestamp);
+    'INSERT INTO proyectos (id, nombre, descripcion, estado, creado_en, actualizado_en) VALUES (?, ?, ?, \'activo\', ?, ?)'
+  ).run(id, nombre, descripcion, timestamp, timestamp);
   return findById(id);
 };
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProyecto } from '../../context/ProyectoContext';
-import { useUsuario } from '../../context/UsuarioContext';
 import { useFetch } from '../../hooks/useFetch';
 import { ciclosApi } from '../../api/ciclosApi';
 import EstadoBadge from '../../components/EstadoBadge';
@@ -11,7 +10,7 @@ import { IconPlus } from '../../components/icons';
 import CicloFormModal from './CicloFormModal';
 import { pct } from '../../utils/metrics';
 
-function CicloCard({ ciclo, isQa, onAccion, onIrAEjecutar }) {
+function CicloCard({ ciclo, onAccion, onIrAEjecutar }) {
   const total = ciclo.totalCasos || 1;
   return (
     <div className="card" style={{ padding: '20px 22px' }}>
@@ -39,20 +38,20 @@ function CicloCard({ ciclo, isQa, onAccion, onIrAEjecutar }) {
         <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>pendiente <strong style={{ color: 'var(--text)' }}>{ciclo.pendiente}</strong></span>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', gap: 8 }}>
-          {isQa && ciclo.estado === 'planificada' && (
+          {ciclo.estado === 'planificada' && (
             <button className="btn btn-primary btn-sm" onClick={() => onAccion('iniciar', ciclo)}>Iniciar</button>
           )}
-          {isQa && ciclo.estado === 'en_progreso' && (
+          {ciclo.estado === 'en_progreso' && (
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => onAccion('bloquear', ciclo)}>Bloquear</button>
               <button className="btn btn-ghost btn-sm" onClick={() => onAccion('completar', ciclo)}>Completar</button>
               <button className="btn btn-primary btn-sm" onClick={() => onIrAEjecutar(ciclo)}>Ir a ejecutar</button>
             </>
           )}
-          {isQa && ciclo.estado === 'bloqueada' && (
+          {ciclo.estado === 'bloqueada' && (
             <button className="btn btn-primary btn-sm" onClick={() => onAccion('desbloquear', ciclo)}>Desbloquear</button>
           )}
-          {(ciclo.estado === 'completada' || !isQa) && (
+          {ciclo.estado === 'completada' && (
             <button className="btn btn-primary btn-sm" onClick={() => onIrAEjecutar(ciclo, true)}>Ver resultados</button>
           )}
         </div>
@@ -63,8 +62,6 @@ function CicloCard({ ciclo, isQa, onAccion, onIrAEjecutar }) {
 
 export default function FasesTesting() {
   const { proyectoId, proyectoActual, cargando: cargandoProyecto, recargar: recargarProyectos } = useProyecto();
-  const { usuario } = useUsuario();
-  const isQa = usuario.rol === 'qa';
   const navigate = useNavigate();
 
   const { data: ciclos, loading, error, refetch } = useFetch(
@@ -133,12 +130,10 @@ export default function FasesTesting() {
           <h1 className="page-title">Fases de testing</h1>
           <div className="page-subtitle">{proyectoActual.nombre} &middot; {ciclos?.data.length ?? 0} ciclos</div>
         </div>
-        {isQa && (
-          <button className="btn btn-primary" onClick={() => setModal('crearCiclo')}>
-            <IconPlus size={15} color="white" />
-            Nueva fase
-          </button>
-        )}
+        <button className="btn btn-primary" onClick={() => setModal('crearCiclo')}>
+          <IconPlus size={15} color="white" />
+          Nueva fase
+        </button>
       </div>
 
       {error && <div className="alert alert-error">{error.message}</div>}
@@ -147,13 +142,13 @@ export default function FasesTesting() {
       {ciclos?.data.length === 0 && (
         <div className="center-state">
           <p>Todavía no hay ninguna fase en este proyecto.</p>
-          {isQa && <button className="btn btn-primary" onClick={() => setModal('crearCiclo')}>Crear la primera fase</button>}
+          <button className="btn btn-primary" onClick={() => setModal('crearCiclo')}>Crear la primera fase</button>
         </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {ciclos?.data.map((c) => (
-          <CicloCard key={c.id} ciclo={c} isQa={isQa} onAccion={onAccion} onIrAEjecutar={onIrAEjecutar} />
+          <CicloCard key={c.id} ciclo={c} onAccion={onAccion} onIrAEjecutar={onIrAEjecutar} />
         ))}
       </div>
 

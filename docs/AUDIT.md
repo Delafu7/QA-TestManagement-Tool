@@ -1,5 +1,7 @@
 # Audit — ROADMAP vs. código real (2026-08-22)
 
+> **Obsoleto en parte (2026-09-10):** la herramienta pasó a ser **single-user** — se eliminaron la tabla `usuarios`, los roles `qa`/`gestor`, la cabecera `X-User-Id` y `requireRole`. Todos los hallazgos de este informe sobre autenticación, autorización por rol y el agujero de auto-escalada de rol en `/api/usuarios` (Riesgo #1) ya no aplican: no hay auth ni roles que asegurar. El resto de hallazgos (bugs de FK, `comentario` de bloqueo, paginación) fueron corregidos en su momento.
+
 Auditoría de solo lectura del repositorio contra [docs/ROADMAP.md](ROADMAP.md) y [docs/design/](design/). Objetivo: verificar en el código qué ítems de §3 del ROADMAP siguen vigentes, y detectar riesgos no documentados.
 
 **Nota sobre alcance:** no se encontró en el repo ningún archivo que defina "prompts 3 a 7" (se buscó `PROMPTS.md`, menciones de "prompt 3", etc., sin resultado). La sección 5 de este informe es una propuesta de secuenciación de los ítems de §3 del ROADMAP, no la recuperación de un plan preexistente.

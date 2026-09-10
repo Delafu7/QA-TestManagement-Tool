@@ -44,7 +44,6 @@ const ejecucion = (overrides = {}) => ({
   suiteNombre: 'Auth > Login',
   prioridad: 'alta',
   estado: 'passed',
-  ejecutor: 'Ana Gómez',
   fechaEjecucion: '2026-08-20T10:15:00Z',
   duracionSegundos: 42,
   comentario: '',

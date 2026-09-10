@@ -7,7 +7,7 @@ const tiposPruebaModel = require('../models/tiposPrueba.model');
 const { AppError, notFound, badRequest, conflict } = require('../utils/errors');
 const logger = require('../utils/logger');
 
-const iniciarInterno = ({ proyectoId, cicloId, tipoPruebaId, directorioRelativo, commandId, argumentosExtra, usuarioId }) => {
+const iniciarInterno = ({ proyectoId, cicloId, tipoPruebaId, directorioRelativo, commandId, argumentosExtra }) => {
   if (!proyectoId) throw badRequest('proyectoId es obligatorio');
   if (!commandId) throw badRequest('commandId es obligatorio');
   if (!proyectosModel.findById(proyectoId)) throw notFound('Proyecto');
@@ -25,7 +25,6 @@ const iniciarInterno = ({ proyectoId, cicloId, tipoPruebaId, directorioRelativo,
     directorioRelativo: directorioNormalizado,
     comando: bin,
     argumentos: args,
-    iniciadoPorId: usuarioId,
   });
 
   logger.info({

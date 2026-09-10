@@ -15,7 +15,6 @@ const errorHandler = (err, req, res, next) => {
     statusCode,
     errorCode: code,
     mensaje: message,
-    usuarioId: req.usuarioId || null,
     ...(isAppError ? {} : { stack: err.stack }),
   });
 

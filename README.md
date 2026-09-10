@@ -1,8 +1,8 @@
 # QA Test Management Tool
 
-A self-hosted test case management application for small QA teams: organize test suites and test cases, plan testing cycles, execute them, log defects, and export results (JSON, Markdown, or straight into Notion) — with an ELK stack for operational observability.
+A self-hosted, **single-user** test case management application: organize test suites and test cases, plan testing cycles, execute them, log defects, and export results (JSON, Markdown, or straight into Notion) — with an ELK stack for operational observability.
 
-It is designed to run **locally or on a trusted internal network**, not as a multi-tenant SaaS product. See [Not built for](#not-built-for-yet) below before deploying it anywhere else.
+It is designed to run **locally or on a trusted internal network** for one operator, not as a multi-tenant SaaS product. There is no login, no user accounts, and no roles. See [Not built for](#not-built-for-yet) below before deploying it anywhere else.
 
 ## Contents
 
@@ -24,7 +24,7 @@ It is designed to run **locally or on a trusted internal network**, not as a mul
 - **Defect tracking** — file a defect straight from a failed execution and move it through `open → in progress → resolved → closed`, with a `reopen` path if verification fails.
 - **Dashboard** — project-level rollups: totals, active cycles, pass rate, and progress.
 - **Export** — download a cycle's results as JSON or a Markdown table, or push them directly into a Notion database (token supplied per request, never stored).
-- **Lightweight identity model** — no password login; QA/manager (`qa`/`gestor`) roles are attributed via an active-user selector (`X-User-Id` header), enough to gate who can edit vs. only observe. See [Security & auth model](docs/ARCHITECTURE.md#authentication-model) for the accepted trade-off.
+- **Single-user, no auth** — no login, no user accounts, no roles. The app assumes one local operator with full access to everything. See [Single-user model](docs/ARCHITECTURE.md#single-user-model) for the trade-off.
 - **Observability** — every API request and business event is logged as structured NDJSON and shipped through Logstash into Elasticsearch/Kibana.
 - **Terminal runner (optional, off by default)** — browse a configured workspace directory and run an explicit allowlist of test commands (e.g. `npm test`) from an in-app panel, with live streamed output and each run persisted as history against a project/cycle/testing type. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#terminal-runner) — enabling it extends the trust boundary described below.
 
@@ -69,7 +69,7 @@ docker compose up --build
 | App (client, proxies `/api`) | http://localhost:8080 | Main entry point |
 | Kibana | http://localhost:5601 | Observability dashboards |
 
-`server`, `elasticsearch`, and `logstash` are not published to the host by default — only `client` and `kibana` are. The SQLite database starts empty; create your first user and project from the UI, or seed it (see below).
+`server`, `elasticsearch`, and `logstash` are not published to the host by default — only `client` and `kibana` are. The SQLite database starts empty; create your first project from the UI, or seed it (see below).
 
 ### Option B — Local development (frontend + backend only, no ELK)
 
@@ -87,7 +87,7 @@ npm install
 npm run dev             # http://localhost:5173, proxies /api to :4000
 ```
 
-Optionally seed the database with realistic sample data (users, a project, suites, tagged cases, two cycles with a mix of closed and pending executions, and defects in various states) — only works against an **empty** database:
+Optionally seed the database with realistic sample data (a project, suites, tagged cases, two cycles with a mix of closed and pending executions, and defects in various states) — only works against an **empty** database:
 
 ```bash
 cd server
@@ -140,9 +140,9 @@ QA-TestManagement-Tool/
 
 Explicitly out of scope for the current implementation — see [docs/ROADMAP.md](docs/ROADMAP.md) for the full, prioritized list:
 
-- Real authentication (password login, SSO) or multi-tenant access control.
-- Deployment outside a trusted local/internal network (the active-user header can be spoofed by anything with network access to the API).
+- Any authentication (password login, SSO), user accounts, roles, or multi-tenant access control — the app is single-user by design.
+- Deployment outside a trusted local/internal network (the API has no authentication at all — anything with network access to it has full read/write access).
 - Integrations beyond Notion (Jira, Slack, email, etc.).
 - Offline mode or sync between separate installations.
 - Encryption at rest for the SQLite database.
-- Safe execution of untrusted or third-party code: the terminal runner (if enabled) trusts whoever can present a `qa` `X-User-Id` to run any allowlisted command against the mounted workspace — it's a convenience for a trusted internal team, not a sandbox against a malicious user on the network.
+- Safe execution of untrusted or third-party code: the terminal runner (if enabled) lets anyone who can reach the API run any allowlisted command against the mounted workspace — it's a convenience for a trusted local setup, not a sandbox against a malicious caller on the network.

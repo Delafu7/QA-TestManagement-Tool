@@ -16,7 +16,6 @@ const toApi = (row) => ({
   salidaTruncada: !!row.salida_truncada,
   iniciadoEn: row.iniciado_en,
   finalizadoEn: row.finalizado_en,
-  iniciadoPorId: row.iniciado_por_id,
 });
 
 const findById = (id) => {
@@ -24,13 +23,13 @@ const findById = (id) => {
   return row ? toApi(row) : null;
 };
 
-const create = ({ proyectoId, cicloId, tipoPruebaId, directorioRelativo, comando, argumentos, iniciadoPorId }) => {
+const create = ({ proyectoId, cicloId, tipoPruebaId, directorioRelativo, comando, argumentos }) => {
   const id = newId();
   db.prepare(
     `INSERT INTO runner_runs
-       (id, proyecto_id, ciclo_id, tipo_prueba_id, directorio_relativo, comando, argumentos, estado, iniciado_en, iniciado_por_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'en_progreso', ?, ?)`
-  ).run(id, proyectoId, cicloId || null, tipoPruebaId || null, directorioRelativo, comando, JSON.stringify(argumentos), now(), iniciadoPorId);
+       (id, proyecto_id, ciclo_id, tipo_prueba_id, directorio_relativo, comando, argumentos, estado, iniciado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'en_progreso', ?)`
+  ).run(id, proyectoId, cicloId || null, tipoPruebaId || null, directorioRelativo, comando, JSON.stringify(argumentos), now());
   return findById(id);
 };
 
