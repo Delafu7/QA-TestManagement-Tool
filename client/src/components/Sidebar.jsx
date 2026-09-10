@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { IconHome, IconList, IconLayers, IconDownload, IconTerminal, IconChevronDown, IconSettings } from './icons';
-import { useUsuario } from '../context/UsuarioContext';
 import { useProyecto } from '../context/ProyectoContext';
 import { runnerApi } from '../api/runnerApi';
 import AjustesProyectoModal from './AjustesProyectoModal';
@@ -13,21 +12,10 @@ const NAV_ITEMS = [
   { to: '/resultados', label: 'Resultados', Icon: IconDownload },
 ];
 
-function initials(nombre) {
-  return nombre
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 export default function Sidebar() {
-  const { usuario, cerrarSesion } = useUsuario();
   const { proyectos, proyectoId, proyectoActual, seleccionarProyecto, recargar } = useProyecto();
   const [ajustesAbiertos, setAjustesAbiertos] = useState(false);
   const [runnerHabilitado, setRunnerHabilitado] = useState(false);
-  const isQa = usuario?.rol === 'qa';
 
   useEffect(() => {
     runnerApi.status().then((res) => setRunnerHabilitado(res.habilitado)).catch(() => setRunnerHabilitado(false));
@@ -67,7 +55,7 @@ export default function Sidebar() {
               <IconChevronDown color="var(--text-2)" />
             </span>
           </div>
-          {isQa && proyectoActual && (
+          {proyectoActual && (
             <button
               type="button"
               className="icon-btn"
@@ -98,18 +86,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      {usuario && (
-        <div className="sidebar__user">
-          <div className="avatar">{initials(usuario.nombre)}</div>
-          <div style={{ minWidth: 0 }}>
-            <div className="sidebar__user-name">{usuario.nombre}</div>
-            <button className="sidebar__user-role" onClick={cerrarSesion} title="Cambiar de usuario">
-              {usuario.rol}
-            </button>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }

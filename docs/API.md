@@ -7,7 +7,7 @@ REST API served under `/api`, JSON in and out. This document reflects the routes
 - **Base path:** `/api`
 - **Content type:** `application/json` for requests with a body; `text/markdown` for the Markdown export.
 - **Dates:** ISO 8601 UTC for datetimes (`2026-08-21T09:15:00Z`); plain `YYYY-MM-DD` for cycle start/end dates.
-- **Authentication header:** every route except `POST /api/usuarios`, `GET /api/usuarios`, and `/health` requires `X-User-Id: <user id>` (see [Authentication](#authentication)).
+- **Authentication:** none. The app is single-user — there is no login, no `X-User-Id` header, and no roles. Every endpoint is open to any caller that can reach the API.
 - **List responses** are wrapped and paginated:
 
   ```json
@@ -16,19 +16,7 @@ REST API served under `/api`, JSON in and out. This document reflects the routes
 
   Query params `page` (default `1`) and `pageSize` (default `20`, max `100`) apply to every list endpoint below except the suites tree (`GET /api/proyectos/:proyectoId/suites`, which returns a nested hierarchy, not a flat page). Missing or non-numeric values fall back to the defaults rather than returning `400`.
 
-- **Rate limiting:** every `/api/*` route (including the unauthenticated `usuarios` bootstrap ones) is limited to `RATE_LIMIT_MAX` requests (default `300`) per `RATE_LIMIT_WINDOW_MS` (default `60000`ms) per client IP. Exceeding it returns `429` with `{ "error": { "code": "RATE_LIMITED", ... } }`.
-
-## Authentication
-
-There is no login endpoint. Identity is established by:
-
-1. `POST /api/usuarios` (no `X-User-Id` required) to create a user, or `GET /api/usuarios` to list existing ones.
-2. Every subsequent request sends that user's `id` as `X-User-Id`.
-
-| Status | When |
-|---|---|
-| `401 UNAUTHORIZED` | `X-User-Id` header missing, or doesn't match an active user |
-| `403 FORBIDDEN` | The user's role isn't permitted to perform the action |
+- **Rate limiting:** every `/api/*` route is limited to `RATE_LIMIT_MAX` requests (default `300`) per `RATE_LIMIT_WINDOW_MS` (default `60000`ms) per client IP. Exceeding it returns `429` with `{ "error": { "code": "RATE_LIMITED", ... } }`.
 
 ## Errors
 
@@ -47,8 +35,6 @@ Standard error body:
 | Status | `code` (example) | Meaning |
 |---|---|---|
 | `400` | `BAD_REQUEST` | Missing/invalid field in the payload |
-| `401` | `UNAUTHORIZED` | Missing or invalid `X-User-Id` |
-| `403` | `FORBIDDEN` | Role not permitted |
 | `404` | `NOT_FOUND` | Resource doesn't exist |
 | `409` | e.g. `INVALID_TRANSITION` | Invalid state transition, or action requires a different current state |
 | `422` | e.g. integrity-rule violation code | e.g. deleting a suite with active cases |
@@ -63,22 +49,7 @@ Error messages in responses are in Spanish (they come straight from the service 
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/health` | Liveness check — `{ "status": "ok" }`. No auth required. |
-
-## Users — `/api/usuarios`
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/usuarios` | List. Query: `rol` |
-| GET | `/api/usuarios/:id` | Detail |
-| POST | `/api/usuarios` | Create. No `X-User-Id` required. |
-| PATCH | `/api/usuarios/:id` | Update |
-
-**POST body**
-```json
-{ "nombre": "Ana Gómez", "email": "ana@example.com", "rol": "qa", "avatarUrl": null }
-```
-`rol` must be `qa` or `gestor`.
+| GET | `/health` | Liveness check — `{ "status": "ok" }`. |
 
 ## Projects — `/api/proyectos`
 
@@ -93,7 +64,7 @@ Error messages in responses are in Spanish (they come straight from the service 
 
 **POST body**
 ```json
-{ "nombre": "App Móvil Banca", "descripcion": "...", "propietarioId": "u-123" }
+{ "nombre": "App Móvil Banca", "descripcion": "..." }
 ```
 
 ## Tags — `/api/proyectos/:proyectoId/etiquetas`, `/api/etiquetas/:id`
@@ -159,7 +130,6 @@ Every project is seeded automatically, on creation, with 8 default types: `funci
   "tipo": "funcional",
   "tipoPruebaId": "tp-1",
   "etiquetaIds": ["et-1"],
-  "autorId": "u-123",
   "pasos": [
     { "orden": 1, "accion": "Introducir email y contraseña válidos", "resultadoEsperado": "Los campos aceptan la entrada" },
     { "orden": 2, "accion": "Pulsar 'Entrar'", "resultadoEsperado": "Se redirige al dashboard" }
@@ -183,7 +153,7 @@ Every project is seeded automatically, on creation, with 8 default types: `funci
 
 **POST body**
 ```json
-{ "nombre": "Sprint 14 — Regresión", "descripcion": "...", "fechaInicio": "2026-09-01", "fechaFinPrevista": "2026-09-12", "responsableId": "u-123" }
+{ "nombre": "Sprint 14 — Regresión", "descripcion": "...", "fechaInicio": "2026-09-01", "fechaFinPrevista": "2026-09-12" }
 ```
 
 **POST `/ciclos/:id/casos` body**
@@ -196,10 +166,10 @@ Every project is seeded automatically, on creation, with 8 default types: `funci
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/ciclos/:cicloId/ejecuciones` | List. Query: `estado`, `ejecutorId`, `tipoPruebaId` |
-| GET | `/api/casos/:casoId/ejecuciones` | Full execution history of a case across all cycles, most recent first (includes desnormalized `cicloNombre`, `ejecutorNombre`) |
+| GET | `/api/ciclos/:cicloId/ejecuciones` | List. Query: `estado`, `tipoPruebaId` |
+| GET | `/api/casos/:casoId/ejecuciones` | Full execution history of a case across all cycles, most recent first (includes desnormalized `cicloNombre`) |
 | GET | `/api/ejecuciones/:id` | Detail, including `resultadosPaso` |
-| PATCH | `/api/ejecuciones/:id/tomar` | `pendiente → en_progreso`; assigns `ejecutorId` to the caller |
+| PATCH | `/api/ejecuciones/:id/tomar` | `pendiente → en_progreso` |
 | PATCH | `/api/ejecuciones/:id/resultado` | Closes the execution as `passed`/`failed`/`blocked`/`skipped` |
 | PATCH | `/api/ejecuciones/:id/reintentar` | `failed`/`blocked → pendiente` |
 
@@ -234,12 +204,12 @@ Every project is seeded automatically, on creation, with 8 default types: `funci
 
 **POST `/ejecuciones/:id/defectos` body**
 ```json
-{ "titulo": "Login no redirige tras éxito", "descripcion": "...", "severidad": "alta", "reportadoPorId": "u-123" }
+{ "titulo": "Login no redirige tras éxito", "descripcion": "...", "severidad": "alta" }
 ```
 
 **POST `/proyectos/:proyectoId/defectos` body**
 ```json
-{ "titulo": "Rendimiento degradado en la pantalla de pagos", "descripcion": "...", "severidad": "media", "reportadoPorId": "u-123", "tipoPruebaId": "tp-6" }
+{ "titulo": "Rendimiento degradado en la pantalla de pagos", "descripcion": "...", "severidad": "media", "tipoPruebaId": "tp-6" }
 ```
 
 ## Export — `/api/ciclos/:cicloId/export/*`
@@ -268,7 +238,6 @@ Both JSON and Markdown exports name the downloaded file `{project-slug}_{cycle-s
 
 | Resource | Base path(s) |
 |---|---|
-| User | `/api/usuarios` |
 | Project | `/api/proyectos` |
 | Tag | `/api/proyectos/:proyectoId/etiquetas`, `/api/etiquetas/:id` |
 | Testing type | `/api/proyectos/:proyectoId/tipos-prueba`, `/api/tipos-prueba/:id` |

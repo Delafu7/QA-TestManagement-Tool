@@ -13,19 +13,18 @@ const toApi = (row) => ({
   tipo: row.tipo,
   tipoPruebaId: row.tipo_prueba_id,
   pasos: JSON.parse(row.pasos_json),
-  editadoPorId: row.editado_por_id,
   creadoEn: row.creado_en,
 });
 
 // Guarda el estado del caso tal y como estaba justo ANTES de aplicarle el PATCH
 // (snapshot "pre-imagen"). Se llama dentro de la misma transacción que
 // casos.model.js#update, antes de escribir los nuevos valores.
-const crearSnapshot = ({ casoId, titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, pasos, editadoPorId }) => {
+const crearSnapshot = ({ casoId, titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, pasos }) => {
   const siguienteVersion =
     (db.prepare('SELECT MAX(version) AS v FROM caso_versiones WHERE caso_id = ?').get(casoId).v || 0) + 1;
   db.prepare(
-    `INSERT INTO caso_versiones (id, caso_id, version, titulo, descripcion, precondiciones, prioridad, tipo, tipo_prueba_id, pasos_json, editado_por_id, creado_en)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO caso_versiones (id, caso_id, version, titulo, descripcion, precondiciones, prioridad, tipo, tipo_prueba_id, pasos_json, creado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     newId(),
     casoId,
@@ -37,7 +36,6 @@ const crearSnapshot = ({ casoId, titulo, descripcion, precondiciones, prioridad,
     tipo,
     tipoPruebaId,
     JSON.stringify(pasos),
-    editadoPorId,
     now()
   );
 };

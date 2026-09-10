@@ -13,13 +13,13 @@ const getById = (id) => {
   return ejecucion;
 };
 
-const tomar = (id, ejecutorId) => {
+const tomar = (id) => {
   const ejecucion = ejecucionesModel.findRawById(id);
   if (!ejecucion) throw notFound('Ejecución');
   if (ejecucion.estado !== 'pendiente') {
     throw conflict('INVALID_TRANSITION', "Solo se puede tomar una ejecución en estado 'pendiente'");
   }
-  return ejecucionesModel.tomar(id, ejecutorId);
+  return ejecucionesModel.tomar(id);
 };
 
 const ESTADOS_RESULTADO = ['passed', 'failed', 'blocked', 'skipped'];

@@ -8,13 +8,13 @@ const nombreArchivo = (payload, extension) =>
   `${slugify(payload.proyecto.nombre)}_${slugify(payload.ciclo.nombre)}_${payload.exportadoEn.slice(0, 10)}.${extension}`;
 
 const exportJson = asyncHandler(async (req, res) => {
-  const payload = exportService.buildExportPayload(req.params.cicloId, req.usuarioId);
+  const payload = exportService.buildExportPayload(req.params.cicloId);
   res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo(payload, 'json')}"`);
   res.json(payload);
 });
 
 const exportMarkdown = asyncHandler(async (req, res) => {
-  const payload = exportService.buildExportPayload(req.params.cicloId, req.usuarioId);
+  const payload = exportService.buildExportPayload(req.params.cicloId);
   const markdown = exportService.toMarkdown(payload);
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo(payload, 'md')}"`);
@@ -27,7 +27,7 @@ const exportNotion = asyncHandler(async (req, res) => {
     throw badRequest('notionDatabaseId y notionToken son obligatorios');
   }
 
-  const payload = exportService.buildExportPayload(req.params.cicloId, req.usuarioId);
+  const payload = exportService.buildExportPayload(req.params.cicloId);
   const ejecucionesConResultado = payload.ejecuciones.filter((e) =>
     ['passed', 'failed', 'blocked', 'skipped'].includes(e.estado)
   );

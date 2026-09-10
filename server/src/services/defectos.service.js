@@ -12,7 +12,7 @@ const getById = (id) => {
   return defecto;
 };
 
-const createFromEjecucion = (ejecucionId, { titulo, descripcion, severidad, reportadoPorId }) => {
+const createFromEjecucion = (ejecucionId, { titulo, descripcion, severidad }) => {
   const ejecucion = ejecucionesModel.findRawById(ejecucionId);
   if (!ejecucion) throw notFound('Ejecución');
   const proyectoId = ejecucionesModel.findProyectoId(ejecucionId);
@@ -25,11 +25,10 @@ const createFromEjecucion = (ejecucionId, { titulo, descripcion, severidad, repo
     titulo,
     descripcion,
     severidad,
-    reportadoPorId,
   });
 };
 
-const createStandalone = (proyectoId, { tipoPruebaId, titulo, descripcion, severidad, reportadoPorId }) => {
+const createStandalone = (proyectoId, { tipoPruebaId, titulo, descripcion, severidad }) => {
   if (!proyectosModel.findById(proyectoId)) throw notFound('Proyecto');
   if (!tipoPruebaId) throw badRequest('tipoPruebaId es obligatorio al reportar un defecto sin ejecución de origen');
   const tipoPrueba = tiposPruebaModel.findById(tipoPruebaId);
@@ -43,7 +42,6 @@ const createStandalone = (proyectoId, { tipoPruebaId, titulo, descripcion, sever
     titulo,
     descripcion,
     severidad,
-    reportadoPorId,
   });
 };
 

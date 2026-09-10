@@ -169,48 +169,6 @@ input, textarea, select {
   background: var(--primary-tint);
 }
 
-.sidebar__user {
-  padding: 14px 16px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background: var(--primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  flex: 0 0 auto;
-}
-
-.sidebar__user-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar__user-role {
-  font-size: 11.5px;
-  color: var(--text-2);
-  text-transform: capitalize;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
 /* ---------- Bottom nav (mobile) ---------- */
 
 .bottom-nav {
@@ -513,15 +471,10 @@ input, textarea, select {
   .sidebar__wordmark,
   .sidebar__section-label,
   .sidebar__project,
-  .nav-item span.nav-label,
-  .sidebar__user-name,
-  .sidebar__user-role {
+  .nav-item span.nav-label {
     display: none;
   }
   .nav-item {
-    justify-content: center;
-  }
-  .sidebar__user {
     justify-content: center;
   }
 }

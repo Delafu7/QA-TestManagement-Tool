@@ -10,7 +10,6 @@ const requestLogger = (req, res, next) => {
       ruta: req.originalUrl,
       statusCode: res.statusCode,
       duracionMs: Math.round(duracionMs),
-      usuarioId: req.usuarioId || null,
     });
   });
   next();

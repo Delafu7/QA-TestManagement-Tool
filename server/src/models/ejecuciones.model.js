@@ -6,7 +6,6 @@ const toApiBase = (row) => ({
   id: row.id,
   cicloId: row.ciclo_id,
   casoId: row.caso_id,
-  ejecutorId: row.ejecutor_id,
   estado: row.estado,
   tipoPruebaId: row.tipo_prueba_id,
   fechaEjecucion: row.fecha_ejecucion,
@@ -38,16 +37,12 @@ const findById = (id) => {
 
 const findRawById = (id) => db.prepare('SELECT * FROM ejecuciones WHERE id = ?').get(id);
 
-const list = (cicloId, { estado, ejecutorId, tipoPruebaId, page, pageSize } = {}) => {
+const list = (cicloId, { estado, tipoPruebaId, page, pageSize } = {}) => {
   const clauses = ['ciclo_id = ?'];
   const params = [cicloId];
   if (estado) {
     clauses.push('estado = ?');
     params.push(estado);
-  }
-  if (ejecutorId) {
-    clauses.push('ejecutor_id = ?');
-    params.push(ejecutorId);
   }
   if (tipoPruebaId) {
     clauses.push('tipo_prueba_id = ?');
@@ -69,16 +64,15 @@ const listByCaso = (casoId, { page, pageSize } = {}) => {
   const total = db.prepare('SELECT COUNT(*) AS n FROM ejecuciones WHERE caso_id = ?').get(casoId).n;
   const rows = db
     .prepare(
-      `SELECT e.*, c.nombre AS ciclo_nombre, u.nombre AS ejecutor_nombre
+      `SELECT e.*, c.nombre AS ciclo_nombre
        FROM ejecuciones e
        JOIN ciclos c ON c.id = e.ciclo_id
-       LEFT JOIN usuarios u ON u.id = e.ejecutor_id
        WHERE e.caso_id = ?
        ORDER BY e.fecha_ejecucion DESC, e.creado_en DESC
        LIMIT ? OFFSET ?`
     )
     .all(casoId, ps, offset)
-    .map((row) => ({ ...toApiBase(row), cicloNombre: row.ciclo_nombre, ejecutorNombre: row.ejecutor_nombre }));
+    .map((row) => ({ ...toApiBase(row), cicloNombre: row.ciclo_nombre }));
   return { data: rows, pagination: { page: p, pageSize: ps, total } };
 };
 
@@ -105,12 +99,8 @@ const createBulk = (cicloId, casoIds) => {
   return ids.map(findById);
 };
 
-const tomar = (id, ejecutorId) => {
-  db.prepare("UPDATE ejecuciones SET estado = 'en_progreso', ejecutor_id = ?, actualizado_en = ? WHERE id = ?").run(
-    ejecutorId,
-    now(),
-    id
-  );
+const tomar = (id) => {
+  db.prepare("UPDATE ejecuciones SET estado = 'en_progreso', actualizado_en = ? WHERE id = ?").run(now(), id);
   return findById(id);
 };
 

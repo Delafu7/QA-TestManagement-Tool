@@ -10,7 +10,6 @@ const iniciar = asyncHandler(async (req, res) => {
     directorioRelativo: directorioRelativo || '',
     commandId,
     argumentosExtra,
-    usuarioId: req.usuarioId,
   });
   res.status(201).json(run);
 });
@@ -28,10 +27,10 @@ const abortar = asyncHandler(async (req, res) => {
   res.json(runnerEjecucionesService.abortar(req.params.id));
 });
 
-// SSE servido a mano: sin EventSource en el cliente (no puede mandar la
-// cabecera X-User-Id que exige la autenticación de esta app), así que el
-// cliente consume esto con fetch + un lector de stream. El formato en el
-// cable sigue siendo SSE estándar (`event:`/`data:`).
+// SSE servido a mano en vez de con EventSource: el cliente lo consume con
+// fetch + un lector de stream, para poder abortar la conexión al desmontar o
+// al lanzar otra ejecución. El formato en el cable sigue siendo SSE estándar
+// (`event:`/`data:`).
 const stream = asyncHandler(async (req, res) => {
   const runId = req.params.id;
   const run = runnerEjecucionesService.getById(runId); // 404 si no existe

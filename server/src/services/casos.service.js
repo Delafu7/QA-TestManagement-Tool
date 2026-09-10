@@ -40,7 +40,7 @@ const create = (fields) => {
   return casosModel.create({ ...fields, tipoPruebaId });
 };
 
-const update = (id, fields, editadoPorId) => {
+const update = (id, fields) => {
   const current = casosModel.findRawById(id);
   if (!current) throw notFound('Caso de prueba');
   if (fields.pasos && casosModel.countEjecucionesHistoricas(id) > 0) {
@@ -55,7 +55,7 @@ const update = (id, fields, editadoPorId) => {
     const tipoPruebaId = resolverTipoPruebaId(suite.proyectoId, fields, current.tipo_prueba_id);
     nextFields = { ...fields, tipoPruebaId };
   }
-  return casosModel.update(id, nextFields, editadoPorId);
+  return casosModel.update(id, nextFields);
 };
 
 const versiones = (id) => {

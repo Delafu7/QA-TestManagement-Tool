@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useProyecto } from '../../context/ProyectoContext';
-import { useUsuario } from '../../context/UsuarioContext';
 import { suitesApi } from '../../api/suitesApi';
 import { casosApi } from '../../api/casosApi';
 import { etiquetasApi } from '../../api/etiquetasApi';
@@ -20,8 +19,6 @@ const PRIO_COLOR = { alta: 'var(--fail)', media: 'var(--block)', baja: 'var(--sk
 
 export default function CasosListado() {
   const { proyectoId, proyectoActual, cargando: cargandoProyecto, recargar: recargarProyectos } = useProyecto();
-  const { usuario } = useUsuario();
-  const isQa = usuario.rol === 'qa';
 
   const [suites, setSuites] = useState(null);
   const [casos, setCasos] = useState(null);
@@ -112,7 +109,7 @@ export default function CasosListado() {
           <h1 className="page-title">Casos de prueba</h1>
           <div className="page-subtitle">{proyectoActual.nombre} &middot; {casos?.length ?? 0} casos</div>
         </div>
-        {isQa && suitesFlat.length > 0 && (
+        {suitesFlat.length > 0 && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-ghost" onClick={() => setModal('gestionarSuites')}>Gestionar suites</button>
             <button className="btn btn-primary" onClick={() => setModal('crearCaso')}>
@@ -128,7 +125,7 @@ export default function CasosListado() {
       {suitesFlat.length === 0 && casos !== null && (
         <div className="center-state">
           <p>Este proyecto todavía no tiene ninguna suite.</p>
-          {isQa && <button className="btn btn-primary" onClick={() => setModal('crearSuite')}>Crear la primera suite</button>}
+          <button className="btn btn-primary" onClick={() => setModal('crearSuite')}>Crear la primera suite</button>
         </div>
       )}
 
@@ -174,7 +171,7 @@ export default function CasosListado() {
             <table className="data-table">
               <thead>
                 <tr>
-                  {isQa && <th style={{ width: 36 }}></th>}
+                  <th style={{ width: 36 }}></th>
                   <th>Título</th>
                   <th>Suite</th>
                   <th>Prioridad</th>
@@ -191,11 +188,9 @@ export default function CasosListado() {
                 )}
                 {casosFiltrados.map((c) => (
                   <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setModal({ casoId: c.id })}>
-                    {isQa && (
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" checked={seleccion.has(c.id)} onChange={() => toggleSeleccion(c.id)} />
-                      </td>
-                    )}
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={seleccion.has(c.id)} onChange={() => toggleSeleccion(c.id)} />
+                    </td>
                     <td>
                       <div style={{ fontWeight: 500 }}>{c.titulo}</div>
                       {c.etiquetaIds?.length > 0 && (
@@ -227,7 +222,7 @@ export default function CasosListado() {
             </table>
           </div>
 
-          {isQa && seleccion.size > 0 && (
+          {seleccion.size > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
               <button className="chip" onClick={() => setModal('asignarCiclo')}>Añadir a ciclo ({seleccion.size})</button>
             </div>

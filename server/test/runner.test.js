@@ -35,7 +35,7 @@ process.env.RUNNER_ENABLED = 'true';
 process.env.RUNNER_WORKSPACE_ROOT = workspaceRoot;
 
 const testServer = require('./helpers/testServer');
-const { crearUsuario, crearProyecto } = require('./helpers/fixtures');
+const { crearProyecto } = require('./helpers/fixtures');
 
 test.before(testServer.start);
 test.after(testServer.stop);
@@ -44,63 +44,60 @@ test.after(() => {
   fs.rmSync(outsideDir, { recursive: true, force: true });
 });
 
-const esperarFinalizacion = async (id, usuarioId, { timeoutMs = 5000, intervaloMs = 50 } = {}) => {
+const esperarFinalizacion = async (id, { timeoutMs = 5000, intervaloMs = 50 } = {}) => {
   const limite = Date.now() + timeoutMs;
   while (Date.now() < limite) {
-    const { body } = await testServer.request('GET', `/api/runner/ejecuciones/${id}`, { usuarioId });
+    const { body } = await testServer.request('GET', `/api/runner/ejecuciones/${id}`);
     if (body.estado !== 'en_progreso') return body;
     await new Promise((r) => setTimeout(r, intervaloMs));
   }
   throw new Error(`La ejecución ${id} no finalizó dentro de ${timeoutMs}ms`);
 };
 
-const lanzar = (usuarioId, body) => testServer.request('POST', '/api/runner/ejecuciones', { usuarioId, body });
+const lanzar = (body) => testServer.request('POST', '/api/runner/ejecuciones', { body });
 
 test('capturar el código de salida: un test que pasa se guarda como passed con código 0', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const { status, body } = await lanzar(qa.id, {
+  const { status, body } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-passed',
     commandId: 'npm-test',
   });
   assert.equal(status, 201);
 
-  const final = await esperarFinalizacion(body.id, qa.id);
+  const final = await esperarFinalizacion(body.id);
   assert.equal(final.estado, 'passed');
   assert.equal(final.codigoSalida, 0);
   assert.equal(final.salidaTruncada, false);
 });
 
 test('capturar el código de salida: un test que falla se guarda como failed con código != 0', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const { body } = await lanzar(qa.id, {
+  const { body } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-failed',
     commandId: 'npm-test',
   });
 
-  const final = await esperarFinalizacion(body.id, qa.id);
+  const final = await esperarFinalizacion(body.id);
   assert.equal(final.estado, 'failed');
   assert.notEqual(final.codigoSalida, 0);
 });
 
 test('un comando que excede el timeout se mata y queda registrado como timeout', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
   const previo = process.env.RUNNER_TIMEOUT_MS;
   process.env.RUNNER_TIMEOUT_MS = '300';
   try {
-    const { body } = await lanzar(qa.id, {
+    const { body } = await lanzar({
       proyectoId: proyecto.id,
       directorioRelativo: 'proyecto-timeout',
       commandId: 'npm-test',
     });
-    const final = await esperarFinalizacion(body.id, qa.id, { timeoutMs: 5000 });
+    const final = await esperarFinalizacion(body.id, { timeoutMs: 5000 });
     assert.equal(final.estado, 'timeout');
   } finally {
     process.env.RUNNER_TIMEOUT_MS = previo;
@@ -108,12 +105,11 @@ test('un comando que excede el timeout se mata y queda registrado como timeout',
 });
 
 test('un commandId fuera de la lista blanca se rechaza con 400 y no crea ninguna ejecución', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const antes = await testServer.request('GET', `/api/runner/ejecuciones?proyectoId=${proyecto.id}`, { usuarioId: qa.id });
+  const antes = await testServer.request('GET', `/api/runner/ejecuciones?proyectoId=${proyecto.id}`);
 
-  const { status, body } = await lanzar(qa.id, {
+  const { status, body } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-passed',
     commandId: 'rm-rf-todo',
@@ -121,15 +117,14 @@ test('un commandId fuera de la lista blanca se rechaza con 400 y no crea ninguna
   assert.equal(status, 400);
   assert.equal(body.error.code, 'BAD_REQUEST');
 
-  const despues = await testServer.request('GET', `/api/runner/ejecuciones?proyectoId=${proyecto.id}`, { usuarioId: qa.id });
+  const despues = await testServer.request('GET', `/api/runner/ejecuciones?proyectoId=${proyecto.id}`);
   assert.equal(despues.body.pagination.total, antes.body.pagination.total);
 });
 
 test('cualquier argumento extra se rechaza con 400, aunque solo use caracteres "seguros"', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const conMetacaracter = await lanzar(qa.id, {
+  const conMetacaracter = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-passed',
     commandId: 'npm-test',
@@ -138,7 +133,7 @@ test('cualquier argumento extra se rechaza con 400, aunque solo use caracteres "
   assert.equal(conMetacaracter.status, 400);
   assert.equal(conMetacaracter.body.error.code, 'BAD_REQUEST');
 
-  const conCaracteresSeguros = await lanzar(qa.id, {
+  const conCaracteresSeguros = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-passed',
     commandId: 'npm-test',
@@ -158,10 +153,9 @@ test('cualquier argumento extra se rechaza con 400, aunque solo use caracteres "
 // runnerProceso.service.js): se prueba aquí que ese vector concreto queda
 // cerrado y que el comando nunca llega a ejecutarse fuera de la raíz.
 test('un argumento como --prefix no puede usarse para escapar la raíz del workspace', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const { status, body } = await lanzar(qa.id, {
+  const { status, body } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-passed',
     commandId: 'npm-test',
@@ -173,10 +167,9 @@ test('un argumento como --prefix no puede usarse para escapar la raíz del works
 });
 
 test('cd con travesía de rutas (../..) se rechaza con 400 y no crea ninguna ejecución', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const { status, body } = await lanzar(qa.id, {
+  const { status, body } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: '../../etc',
     commandId: 'npm-test',
@@ -186,10 +179,9 @@ test('cd con travesía de rutas (../..) se rechaza con 400 y no crea ninguna eje
 });
 
 test('un directorioRelativo absoluto se rechaza con 400', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const { status } = await lanzar(qa.id, {
+  const { status } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: '/etc',
     commandId: 'npm-test',
@@ -198,10 +190,9 @@ test('un directorioRelativo absoluto se rechaza con 400', async () => {
 });
 
 test('un symlink que apunta fuera de la raíz del workspace se rechaza con 400', async () => {
-  const qa = await crearUsuario('qa');
-  const proyecto = await crearProyecto(qa.id);
+  const proyecto = await crearProyecto();
 
-  const { status } = await lanzar(qa.id, {
+  const { status } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'enlace-externo',
     commandId: 'npm-test',
@@ -210,50 +201,37 @@ test('un symlink que apunta fuera de la raíz del workspace se rechaza con 400',
 });
 
 test('navegar (ls) con travesía de rutas también se rechaza con 400', async () => {
-  const qa = await crearUsuario('qa');
-  const { status } = await testServer.request('GET', '/api/runner/directorio?ruta=..%2F..%2Fetc', { usuarioId: qa.id });
+  const { status } = await testServer.request('GET', '/api/runner/directorio?ruta=..%2F..%2Fetc');
   assert.equal(status, 400);
 });
 
-test('un gestor no puede iniciar ni abortar una ejecución del runner (403)', async () => {
-  const qa = await crearUsuario('qa');
-  const gestor = await crearUsuario('gestor');
-  const proyecto = await crearProyecto(qa.id);
+test('abortar una ejecución en curso la deja en estado cancelado', async () => {
+  const proyecto = await crearProyecto();
 
-  const iniciar = await lanzar(gestor.id, {
-    proyectoId: proyecto.id,
-    directorioRelativo: 'proyecto-passed',
-    commandId: 'npm-test',
-  });
-  assert.equal(iniciar.status, 403);
-
-  const { body: run } = await lanzar(qa.id, {
+  const { body: run } = await lanzar({
     proyectoId: proyecto.id,
     directorioRelativo: 'proyecto-timeout',
     commandId: 'npm-test',
   });
-  const abortarComoGestor = await testServer.request('PATCH', `/api/runner/ejecuciones/${run.id}/abortar`, { usuarioId: gestor.id });
-  assert.equal(abortarComoGestor.status, 403);
 
   // abortar() dispara la señal y responde de inmediato; el estado final
   // (`cancelado`) solo queda persistido cuando el proceso realmente termina.
-  const abortarComoQa = await testServer.request('PATCH', `/api/runner/ejecuciones/${run.id}/abortar`, { usuarioId: qa.id });
-  assert.equal(abortarComoQa.status, 200);
+  const abortar = await testServer.request('PATCH', `/api/runner/ejecuciones/${run.id}/abortar`);
+  assert.equal(abortar.status, 200);
 
-  const final = await esperarFinalizacion(run.id, qa.id);
+  const final = await esperarFinalizacion(run.id);
   assert.equal(final.estado, 'cancelado');
 });
 
 test('listar el historial de ejecuciones filtra por proyectoId', async () => {
-  const qa = await crearUsuario('qa');
-  const proyectoA = await crearProyecto(qa.id);
-  const proyectoB = await crearProyecto(qa.id);
+  const proyectoA = await crearProyecto();
+  const proyectoB = await crearProyecto();
 
-  const { body: runA } = await lanzar(qa.id, { proyectoId: proyectoA.id, directorioRelativo: 'proyecto-passed', commandId: 'npm-test' });
-  await lanzar(qa.id, { proyectoId: proyectoB.id, directorioRelativo: 'proyecto-passed', commandId: 'npm-test' });
-  await esperarFinalizacion(runA.id, qa.id);
+  const { body: runA } = await lanzar({ proyectoId: proyectoA.id, directorioRelativo: 'proyecto-passed', commandId: 'npm-test' });
+  await lanzar({ proyectoId: proyectoB.id, directorioRelativo: 'proyecto-passed', commandId: 'npm-test' });
+  await esperarFinalizacion(runA.id);
 
-  const { body } = await testServer.request('GET', `/api/runner/ejecuciones?proyectoId=${proyectoA.id}`, { usuarioId: qa.id });
+  const { body } = await testServer.request('GET', `/api/runner/ejecuciones?proyectoId=${proyectoA.id}`);
   assert.ok(body.data.every((r) => r.proyectoId === proyectoA.id));
   assert.equal(body.pagination.total, 1);
 });

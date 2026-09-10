@@ -4,7 +4,7 @@ This is a reference for the system **as implemented**. For the reasoning behind 
 
 ## 1. Overview
 
-Monorepo, two applications (`/client`, `/server`) orchestrated by Docker Compose, plus an ELK observability stack. It's a locally-run application for one QA team, not a SaaS product.
+Monorepo, two applications (`/client`, `/server`) orchestrated by Docker Compose, plus an ELK observability stack. It's a locally-run, single-user application, not a SaaS product.
 
 Fixed stack:
 
@@ -42,10 +42,10 @@ server ──(server-side fetch, export only)──▶ Notion API (external)
 Typical write path (e.g. recording an execution result):
 
 1. User interacts with the React SPA (e.g. marks an execution `failed`).
-2. SPA sends `PATCH /api/ejecuciones/:id/resultado` with `X-User-Id` and a JSON body.
+2. SPA sends `PATCH /api/ejecuciones/:id/resultado` with a JSON body (no auth header).
 3. Express validates the payload shape and the state transition (`server/services`).
 4. The service reads/writes SQLite through `server/models`.
-5. The request middleware writes one structured NDJSON log line (route, status, duration, user, project).
+5. The request middleware writes one structured NDJSON log line (route, status, duration).
 6. The API responds `200 OK` with the updated resource (or a structured error).
 7. The SPA updates its UI from the response.
 
@@ -75,7 +75,7 @@ There is no dedicated `db` container: SQLite is a file in the `sqlite-data` volu
 client/src/
 ├── api/          # one fetch module per resource (casosApi.js, ciclosApi.js, ...)
 ├── components/    # reusable UI: modals, EstadoBadge, Sidebar, BottomNav, TagPicker...
-├── context/       # UsuarioContext (active user), ProyectoContext (active project)
+├── context/       # ProyectoContext (active project)
 ├── hooks/         # data hooks (useFetch)
 ├── screens/       # one folder per screen — Dashboard, CasosPrueba, FasesTesting,
 │                  # EjecucionCiclo, Resultados
@@ -92,7 +92,7 @@ server/src/
 ├── controllers/    # request/response shaping, input presence checks
 ├── services/        # business rules: state machines, derived metrics, orchestration
 ├── models/          # data access — hand-written SQL over better-sqlite3
-├── middleware/       # auth.middleware (X-User-Id), logger, error handler, 404
+├── middleware/       # logger, error handler, 404, rate limit
 ├── integrations/     # notion.client.js — outbound Notion API client
 ├── db/                # schema.sql, connection.js
 ├── app.js             # Express app wiring (no listen())
@@ -101,14 +101,14 @@ server/scripts/
 └── seed.js            # populates an empty DB with realistic sample data
 server/test/
 ├── helpers/            # shared test server (ephemeral port, in-memory SQLite) + fixtures
-└── *.test.js           # node:test suite: state machines, integrity rules, auth/roles, export (used by CI)
+└── *.test.js           # node:test suite: state machines, integrity rules, export (used by CI)
 ```
 
 ## 6. Responsibilities by layer
 
 | Layer | Responsible for | Not responsible for |
 |---|---|---|
-| `client` | Rendering, navigation, forms, per-role visual feedback | Definitive business validation, DB access |
+| `client` | Rendering, navigation, forms, visual feedback | Definitive business validation, DB access |
 | `server/routes` + `controllers` | Receiving the HTTP request, delegating to `services`, shaping the response | Complex business rules |
 | `server/services` | Validating state transitions, computing derived fields, orchestrating export | HTTP details |
 | `server/models` | Data access | Business logic |
@@ -131,16 +131,15 @@ errorHandler.middleware.js
 
 No business error (`409`, `422`) should ever surface to the user as a blank screen or a generic "something went wrong" — the standard error body always carries a `code` and a human `message` that the client maps to a contextual message per screen (see [docs/API.md](API.md#errors)).
 
-## Authentication model
+## Single-user model
 
-There is **no real authentication** (no password login, no SSO) in this iteration — deliberately out of scope, not an oversight. Instead:
+The app is **single-user**. There is no authentication, no user accounts, no roles, and no `X-User-Id` header. Every request has full read/write access to everything; the API assumes one local operator.
 
-1. On first load, the user picks (or creates) their identity from an active-user selector; the SPA stores the chosen user in `localStorage`.
-2. Every subsequent API request carries an `X-User-Id` header.
-3. `server/src/middleware/auth.middleware.js` resolves that header to a user row (`SELECT ... WHERE id = ? AND activo = 1`) and attaches `req.usuarioId` / `req.usuarioRol`.
-4. `requireRole(...)` gates specific actions to the `qa` or `gestor` role.
+- No `usuarios` table, no `identifyUser`/`requireRole` middleware.
+- No attribution: entities (`casos_prueba`, `ciclos`, `ejecuciones`, `defectos`, `runner_runs`, `caso_versiones`) have no "created by / executed by / reported by" column. The change history of a test case (`caso_versiones`) records *when* each version was saved, not *who* saved it.
+- The client has no login or user-selection screen — it opens straight into the dashboard.
 
-**Accepted risk:** any process with network access to the API can impersonate any user simply by sending their `id`. This is acceptable for a trusted local/internal deployment and **not acceptable** if the app is exposed beyond `localhost`/an internal network — see [docs/ROADMAP.md](ROADMAP.md) for what real authentication would require.
+**Accepted risk:** anything with network access to the API has full access to all data and (if the terminal runner is enabled) can run allowlisted commands. This is acceptable for a trusted local/single-machine deployment and **not acceptable** if the app is exposed beyond `localhost`/an internal network.
 
 ## Configuration reference
 

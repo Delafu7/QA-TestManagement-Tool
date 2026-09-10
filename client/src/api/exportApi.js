@@ -2,18 +2,13 @@ import { api, ApiError } from './client';
 
 const BASE = '/api';
 
-function usuarioHeaders() {
-  const id = localStorage.getItem('qa-tool:usuarioId');
-  return id ? { 'X-User-Id': id } : {};
-}
-
 function filenameFromDisposition(disposition, fallback) {
   const match = /filename="([^"]+)"/.exec(disposition || '');
   return match ? match[1] : fallback;
 }
 
 async function downloadFile(path, fallbackName) {
-  const res = await fetch(`${BASE}${path}`, { headers: usuarioHeaders() });
+  const res = await fetch(`${BASE}${path}`);
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
     const err = payload?.error || {};

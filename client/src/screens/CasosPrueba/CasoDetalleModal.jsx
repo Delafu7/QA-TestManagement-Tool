@@ -7,10 +7,8 @@ import CasoFormModal from './CasoFormModal';
 import { casosApi } from '../../api/casosApi';
 import { ejecucionesApi } from '../../api/ejecucionesApi';
 import { tiposPruebaApi } from '../../api/tiposPruebaApi';
-import { useUsuario } from '../../context/UsuarioContext';
 
 export default function CasoDetalleModal({ casoId, proyectoId, suites, onClose, onCambiado }) {
-  const { usuario } = useUsuario();
   const [caso, setCaso] = useState(null);
   const [historial, setHistorial] = useState(null);
   const [tiposPrueba, setTiposPrueba] = useState(null);
@@ -51,9 +49,7 @@ export default function CasoDetalleModal({ casoId, proyectoId, suites, onClose, 
             <EstadoBadge estado={caso.estado} />
             <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Prioridad: <strong style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{caso.prioridad}</strong></span>
             <TipoPruebaBadge tipoPrueba={tiposPrueba?.find((t) => t.id === caso.tipoPruebaId)} />
-            {usuario.rol === 'qa' && (
-              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setEditando(true)}>Editar</button>
-            )}
+            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setEditando(true)}>Editar</button>
           </div>
 
           {(suiteActual || (caso.etiquetaIds?.length > 0 && proyectoId)) && (
@@ -87,24 +83,21 @@ export default function CasoDetalleModal({ casoId, proyectoId, suites, onClose, 
             <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)', fontSize: 12.5, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 500 }}>{h.cicloNombre}</span>
               <EstadoBadge estado={h.estado} size="sm" />
-              <span style={{ color: 'var(--text-2)' }}>{h.ejecutorNombre || 'sin asignar'}</span>
               {h.fechaEjecucion && <span style={{ color: 'var(--text-2)' }}>{new Date(h.fechaEjecucion).toLocaleDateString()}</span>}
             </div>
           ))}
 
-          {usuario.rol === 'qa' && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              {caso.estado === 'borrador' && (
-                <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(casosApi.publicar)}>Publicar</button>
-              )}
-              {caso.estado === 'activo' && (
-                <button className="btn btn-ghost" disabled={procesando} onClick={() => transicionar(casosApi.deprecar)}>Deprecar</button>
-              )}
-              {caso.estado === 'obsoleto' && (
-                <button className="btn btn-ghost" disabled={procesando} onClick={() => transicionar(casosApi.reactivar)}>Reactivar</button>
-              )}
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+            {caso.estado === 'borrador' && (
+              <button className="btn btn-primary" disabled={procesando} onClick={() => transicionar(casosApi.publicar)}>Publicar</button>
+            )}
+            {caso.estado === 'activo' && (
+              <button className="btn btn-ghost" disabled={procesando} onClick={() => transicionar(casosApi.deprecar)}>Deprecar</button>
+            )}
+            {caso.estado === 'obsoleto' && (
+              <button className="btn btn-ghost" disabled={procesando} onClick={() => transicionar(casosApi.reactivar)}>Reactivar</button>
+            )}
+          </div>
         </div>
       )}
 

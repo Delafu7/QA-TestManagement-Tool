@@ -2,8 +2,8 @@ const ejecucionesService = require('../services/ejecuciones.service');
 const asyncHandler = require('../utils/asyncHandler');
 
 const list = asyncHandler(async (req, res) => {
-  const { estado, ejecutorId, tipoPruebaId, page, pageSize } = req.query;
-  res.json(ejecucionesService.list(req.params.cicloId, { estado, ejecutorId, tipoPruebaId, page, pageSize }));
+  const { estado, tipoPruebaId, page, pageSize } = req.query;
+  res.json(ejecucionesService.list(req.params.cicloId, { estado, tipoPruebaId, page, pageSize }));
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -16,7 +16,7 @@ const listByCaso = asyncHandler(async (req, res) => {
 });
 
 const tomar = asyncHandler(async (req, res) => {
-  res.json(ejecucionesService.tomar(req.params.id, req.usuarioId));
+  res.json(ejecucionesService.tomar(req.params.id));
 });
 
 const registrarResultado = asyncHandler(async (req, res) => {

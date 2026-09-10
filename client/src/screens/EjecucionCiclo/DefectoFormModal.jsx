@@ -2,10 +2,8 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import TipoPruebaBadge from '../../components/TipoPruebaBadge';
 import { defectosApi } from '../../api/defectosApi';
-import { useUsuario } from '../../context/UsuarioContext';
 
 export default function DefectoFormModal({ ejecucionId, tipoPrueba, onClose, onCreado }) {
-  const { usuario } = useUsuario();
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [severidad, setSeveridad] = useState('media');
@@ -18,7 +16,7 @@ export default function DefectoFormModal({ ejecucionId, tipoPrueba, onClose, onC
     setError(null);
     try {
       const defecto = await defectosApi.createFromEjecucion(ejecucionId, {
-        titulo, descripcion, severidad, reportadoPorId: usuario.id,
+        titulo, descripcion, severidad,
       });
       onCreado(defecto);
     } catch (err) {

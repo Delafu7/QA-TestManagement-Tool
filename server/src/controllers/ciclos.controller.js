@@ -12,9 +12,9 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { nombre, descripcion, fechaInicio, fechaFinPrevista, responsableId } = req.body;
-  if (!nombre || !fechaInicio || !fechaFinPrevista || !responsableId) {
-    throw badRequest('nombre, fechaInicio, fechaFinPrevista y responsableId son obligatorios');
+  const { nombre, descripcion, fechaInicio, fechaFinPrevista } = req.body;
+  if (!nombre || !fechaInicio || !fechaFinPrevista) {
+    throw badRequest('nombre, fechaInicio y fechaFinPrevista son obligatorios');
   }
   res.status(201).json(
     ciclosService.create({
@@ -23,7 +23,6 @@ const create = asyncHandler(async (req, res) => {
       descripcion,
       fechaInicio,
       fechaFinPrevista,
-      responsableId,
     })
   );
 });

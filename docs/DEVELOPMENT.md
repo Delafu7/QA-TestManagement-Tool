@@ -36,7 +36,7 @@ No `.env` file is read automatically — export these in your shell or prefix th
 
 ### Terminal runner
 
-The terminal panel (`/terminal` in the client) lets a QA engineer browse `RUNNER_WORKSPACE_ROOT` and run a small, explicit allowlist of commands — never an arbitrary shell string. This is opt-in and off by default: **there is no password authentication in this app** (see [docs/ARCHITECTURE.md#authentication-model](../docs/ARCHITECTURE.md#authentication-model)), so enabling it means anyone who can reach the API and set `X-User-Id` to a `qa` user can execute whatever is on the allowlist against the mounted workspace. Only enable it on a genuinely trusted network, with a workspace root that contains nothing you wouldn't want a `qa` user to run test commands against.
+The terminal panel (`/terminal` in the client) lets you browse `RUNNER_WORKSPACE_ROOT` and run a small, explicit allowlist of commands — never an arbitrary shell string. This is opt-in and off by default: **the app has no authentication at all** (see [docs/ARCHITECTURE.md#single-user-model](../docs/ARCHITECTURE.md#single-user-model)), so enabling it means anyone who can reach the API can execute whatever is on the allowlist against the mounted workspace. Only enable it on a genuinely trusted network, with a workspace root that contains nothing you wouldn't want run test commands against.
 
 To add a command to the allowlist, edit `ALLOWED_COMMANDS` in `server/src/config/runner.js`:
 
@@ -57,7 +57,7 @@ cd server
 npm run seed
 ```
 
-Populates: 3 users (2 `qa`, 1 `gestor`), 1 project, suites, tags, tagged test cases, two testing cycles (one with closed executions in a realistic pass/fail mix, one still pending), and defects across several states. **Only runs against an empty database** — if `usuarios` already has rows, it exits with an error rather than duplicating data. To reseed, delete the SQLite file (or point `SQLITE_DB_PATH` at a fresh one) first.
+Populates: 1 project, suites, tags, tagged test cases, two testing cycles (one with closed executions in a realistic pass/fail mix, one still pending), and defects across several states. **Only runs against an empty database** — if `proyectos` already has rows, it exits with an error rather than duplicating data. To reseed, delete the SQLite file (or point `SQLITE_DB_PATH` at a fresh one) first.
 
 ### Backend tests
 
@@ -66,7 +66,7 @@ cd server
 npm test    # runs the test/ suite (node:test) via node --test test/*.test.js
 ```
 
-Each `test/*.test.js` file boots the Express app in-process against its own in-memory SQLite database (`node --test` isolates each file in its own process, so this is safe) and exercises it over real HTTP with the built-in `fetch`. Coverage includes: state-machine transitions and integrity rules for casos/suites/ciclos/ejecuciones/defectos, the `X-User-Id` auth and `requireRole` gating, the Notion export client's retry/backoff and systemic-vs-per-item error handling (against a local fake HTTP server, not the real Notion API), and JSON/Markdown export shape. See `server/test/helpers/` for the shared test server and fixture builders.
+Each `test/*.test.js` file boots the Express app in-process against its own in-memory SQLite database (`node --test` isolates each file in its own process, so this is safe) and exercises it over real HTTP with the built-in `fetch`. Coverage includes: state-machine transitions and integrity rules for casos/suites/ciclos/ejecuciones/defectos, the Notion export client's retry/backoff and systemic-vs-per-item error handling (against a local fake HTTP server, not the real Notion API), and JSON/Markdown export shape. See `server/test/helpers/` for the shared test server and fixture builders.
 
 ## Running the frontend
 

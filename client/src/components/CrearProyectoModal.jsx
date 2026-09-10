@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import Modal from './Modal';
 import { proyectosApi } from '../api/proyectosApi';
-import { useUsuario } from '../context/UsuarioContext';
 
 export default function CrearProyectoModal({ onClose, onCreado }) {
-  const { usuario } = useUsuario();
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -15,7 +13,7 @@ export default function CrearProyectoModal({ onClose, onCreado }) {
     setGuardando(true);
     setError(null);
     try {
-      const proyecto = await proyectosApi.create({ nombre, descripcion, propietarioId: usuario.id });
+      const proyecto = await proyectosApi.create({ nombre, descripcion });
       onCreado(proyecto);
     } catch (err) {
       setError(err.message);

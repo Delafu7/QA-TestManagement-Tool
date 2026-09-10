@@ -8,13 +8,13 @@ test.before(testServer.start);
 test.after(testServer.stop);
 
 test('cobertura por suite: caso activo sin ninguna ejecución en el ciclo da 0%, no NaN', async () => {
-  const { qa, proyecto, suite } = await crearEscenarioBase();
+  const { proyecto, suite } = await crearEscenarioBase();
   // El caso de crearEscenarioBase queda publicado (activo); creamos un ciclo aparte
   // sin asignarle ningún caso para forzar 0 ejecuciones y comprobar la guarda.
-  const ciclo = await crearCicloPlanificado(qa.id, proyecto.id);
-  await testServer.request('PATCH', `/api/ciclos/${ciclo.id}/iniciar`, { usuarioId: qa.id });
+  const ciclo = await crearCicloPlanificado(proyecto.id);
+  await testServer.request('PATCH', `/api/ciclos/${ciclo.id}/iniciar`);
 
-  const res = await testServer.request('GET', `/api/ciclos/${ciclo.id}/cobertura`, { usuarioId: qa.id });
+  const res = await testServer.request('GET', `/api/ciclos/${ciclo.id}/cobertura`);
   assert.equal(res.status, 200);
   const fila = res.body.data.find((s) => s.suiteId === suite.id);
   assert.ok(fila);
@@ -24,12 +24,12 @@ test('cobertura por suite: caso activo sin ninguna ejecución en el ciclo da 0%,
 });
 
 test('cobertura por suite: caso activo con ejecución asignada cuenta como cubierto', async () => {
-  const { qa, proyecto, suite, caso } = await crearEscenarioBase();
-  const ciclo = await crearCicloPlanificado(qa.id, proyecto.id);
-  await testServer.request('PATCH', `/api/ciclos/${ciclo.id}/iniciar`, { usuarioId: qa.id });
-  await asignarCasos(qa.id, ciclo.id, [caso.id]);
+  const { proyecto, suite, caso } = await crearEscenarioBase();
+  const ciclo = await crearCicloPlanificado(proyecto.id);
+  await testServer.request('PATCH', `/api/ciclos/${ciclo.id}/iniciar`);
+  await asignarCasos(ciclo.id, [caso.id]);
 
-  const res = await testServer.request('GET', `/api/ciclos/${ciclo.id}/cobertura`, { usuarioId: qa.id });
+  const res = await testServer.request('GET', `/api/ciclos/${ciclo.id}/cobertura`);
   const fila = res.body.data.find((s) => s.suiteId === suite.id);
   assert.equal(fila.totalCasos, 1);
   assert.equal(fila.casosCubiertos, 1);
@@ -37,14 +37,14 @@ test('cobertura por suite: caso activo con ejecución asignada cuenta como cubie
 });
 
 test('cobertura de una suite cuyo único caso sigue en borrador (0 casos activos): pctCobertura null, no dividir por cero', async () => {
-  const { qa, proyecto } = await crearEscenarioBase();
+  const { proyecto } = await crearEscenarioBase();
   const { crearSuite, crearCaso } = require('./helpers/fixtures');
-  const suiteBorrador = await crearSuite(qa.id, proyecto.id);
-  await crearCaso(qa.id, suiteBorrador.id); // se queda en borrador, no se publica
-  const ciclo = await crearCicloPlanificado(qa.id, proyecto.id);
-  await testServer.request('PATCH', `/api/ciclos/${ciclo.id}/iniciar`, { usuarioId: qa.id });
+  const suiteBorrador = await crearSuite(proyecto.id);
+  await crearCaso(suiteBorrador.id); // se queda en borrador, no se publica
+  const ciclo = await crearCicloPlanificado(proyecto.id);
+  await testServer.request('PATCH', `/api/ciclos/${ciclo.id}/iniciar`);
 
-  const res = await testServer.request('GET', `/api/ciclos/${ciclo.id}/cobertura`, { usuarioId: qa.id });
+  const res = await testServer.request('GET', `/api/ciclos/${ciclo.id}/cobertura`);
   assert.equal(res.status, 200);
   const fila = res.body.data.find((s) => s.suiteId === suiteBorrador.id);
   assert.ok(fila);

@@ -9,7 +9,6 @@ const buildProperties = (ejecucion, cicloNombre) => ({
   Prioridad: { select: { name: ejecucion.prioridad } },
   'Tipo de prueba': { select: ejecucion.tipoPrueba ? { name: ejecucion.tipoPrueba.nombre } : null },
   Estado: { select: { name: ejecucion.estado } },
-  Ejecutor: { rich_text: [{ text: { content: ejecucion.ejecutor || '' } }] },
   ...(ejecucion.fechaEjecucion ? { Fecha: { date: { start: ejecucion.fechaEjecucion } } } : {}),
   'Duración (s)': { number: ejecucion.duracionSegundos ?? null },
   Comentario: { rich_text: [{ text: { content: ejecucion.comentario || '' } }] },

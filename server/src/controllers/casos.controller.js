@@ -12,9 +12,9 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const { titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, etiquetaIds, autorId, pasos } = req.body;
-  if (!titulo || !prioridad || !tipo || !autorId) {
-    throw badRequest('titulo, prioridad, tipo y autorId son obligatorios');
+  const { titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, etiquetaIds, pasos } = req.body;
+  if (!titulo || !prioridad || !tipo) {
+    throw badRequest('titulo, prioridad y tipo son obligatorios');
   }
   res.status(201).json(
     casosService.create({
@@ -26,14 +26,13 @@ const create = asyncHandler(async (req, res) => {
       tipo,
       tipoPruebaId,
       etiquetaIds,
-      autorId,
       pasos,
     })
   );
 });
 
 const update = asyncHandler(async (req, res) => {
-  res.json(casosService.update(req.params.id, req.body, req.usuarioId));
+  res.json(casosService.update(req.params.id, req.body));
 });
 
 const versiones = asyncHandler(async (req, res) => {

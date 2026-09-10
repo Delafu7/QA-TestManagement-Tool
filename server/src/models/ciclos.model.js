@@ -11,7 +11,6 @@ const toApi = (row) => ({
   fechaInicio: row.fecha_inicio,
   fechaFinPrevista: row.fecha_fin_prevista,
   fechaFinReal: row.fecha_fin_real,
-  responsableId: row.responsable_id,
   comentario: row.comentario,
   creadoEn: row.creado_en,
   actualizadoEn: row.actualizado_en,
@@ -38,13 +37,13 @@ const list = (proyectoId, { estado, page, pageSize } = {}) => {
   return { data: rows.map(toApi), pagination: { page: p, pageSize: ps, total } };
 };
 
-const create = ({ proyectoId, nombre, descripcion = null, fechaInicio, fechaFinPrevista, responsableId }) => {
+const create = ({ proyectoId, nombre, descripcion = null, fechaInicio, fechaFinPrevista }) => {
   const id = newId();
   const timestamp = now();
   db.prepare(
-    `INSERT INTO ciclos (id, proyecto_id, nombre, descripcion, estado, fecha_inicio, fecha_fin_prevista, responsable_id, creado_en, actualizado_en)
-     VALUES (?, ?, ?, ?, 'planificada', ?, ?, ?, ?, ?)`
-  ).run(id, proyectoId, nombre, descripcion, fechaInicio, fechaFinPrevista, responsableId, timestamp, timestamp);
+    `INSERT INTO ciclos (id, proyecto_id, nombre, descripcion, estado, fecha_inicio, fecha_fin_prevista, creado_en, actualizado_en)
+     VALUES (?, ?, ?, ?, 'planificada', ?, ?, ?, ?)`
+  ).run(id, proyectoId, nombre, descripcion, fechaInicio, fechaFinPrevista, timestamp, timestamp);
   return findById(id);
 };
 

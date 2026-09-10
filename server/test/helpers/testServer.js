@@ -22,9 +22,10 @@ const start = () =>
 
 const stop = () => new Promise((resolve) => server.close(resolve));
 
-const request = (method, urlPath, { usuarioId, body } = {}) => {
+// `usuarioId` se acepta y se ignora: la app es single-user y no hay cabecera de
+// identidad. El parámetro se tolera para no reescribir de golpe cada call-site.
+const request = (method, urlPath, { body } = {}) => {
   const headers = { 'Content-Type': 'application/json' };
-  if (usuarioId) headers['X-User-Id'] = usuarioId;
   return fetch(`${baseUrl}${urlPath}`, {
     method,
     headers,

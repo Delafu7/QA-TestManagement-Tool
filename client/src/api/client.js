@@ -9,15 +9,8 @@ export class ApiError extends Error {
   }
 }
 
-let usuarioId = null;
-
-export function setUsuarioId(id) {
-  usuarioId = id;
-}
-
 async function request(method, path, body) {
   const headers = { 'Content-Type': 'application/json' };
-  if (usuarioId) headers['X-User-Id'] = usuarioId;
 
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -71,18 +64,15 @@ async function count(path) {
 }
 
 // Consumo manual de un endpoint Server-Sent Events con fetch en vez de
-// EventSource: EventSource no permite mandar cabeceras propias, y esta app
-// autentica todo por X-User-Id (ver docs/ARCHITECTURE.md#authentication-model).
-// El formato en el cable sigue siendo SSE estándar (`event:`/`data:`); esto
-// solo cambia cómo se lee en el cliente. Devuelve un AbortController para que
-// el llamador pueda cortar la conexión (p.ej. al desmontar o al lanzar otra).
+// EventSource. El formato en el cable sigue siendo SSE estándar
+// (`event:`/`data:`); esto solo cambia cómo se lee en el cliente. Devuelve un
+// AbortController para que el llamador pueda cortar la conexión (p.ej. al
+// desmontar o al lanzar otra).
 function stream(path, onEvent) {
-  const headers = {};
-  if (usuarioId) headers['X-User-Id'] = usuarioId;
   const controller = new AbortController();
 
   (async () => {
-    const res = await fetch(`${BASE}${path}`, { headers, signal: controller.signal });
+    const res = await fetch(`${BASE}${path}`, { signal: controller.signal });
     if (!res.ok || !res.body) {
       onEvent({ event: 'error', data: { message: `Error de red (${res.status})` } });
       return;

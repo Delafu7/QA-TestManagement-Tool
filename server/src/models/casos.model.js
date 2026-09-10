@@ -13,7 +13,6 @@ const toApiBase = (row) => ({
   tipo: row.tipo,
   tipoPruebaId: row.tipo_prueba_id,
   estado: row.estado,
-  autorId: row.autor_id,
   creadoEn: row.creado_en,
   actualizadoEn: row.actualizado_en,
 });
@@ -90,14 +89,14 @@ const replaceEtiquetas = (casoId, etiquetaIds) => {
   }
 };
 
-const create = ({ suiteId, titulo, descripcion = null, precondiciones = null, prioridad, tipo, tipoPruebaId = null, autorId, etiquetaIds = [], pasos }) => {
+const create = ({ suiteId, titulo, descripcion = null, precondiciones = null, prioridad, tipo, tipoPruebaId = null, etiquetaIds = [], pasos }) => {
   const id = newId();
   const timestamp = now();
   const tx = db.transaction(() => {
     db.prepare(
-      `INSERT INTO casos_prueba (id, suite_id, titulo, descripcion, precondiciones, prioridad, tipo, tipo_prueba_id, estado, autor_id, creado_en, actualizado_en)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'borrador', ?, ?, ?)`
-    ).run(id, suiteId, titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, autorId, timestamp, timestamp);
+      `INSERT INTO casos_prueba (id, suite_id, titulo, descripcion, precondiciones, prioridad, tipo, tipo_prueba_id, estado, creado_en, actualizado_en)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'borrador', ?, ?)`
+    ).run(id, suiteId, titulo, descripcion, precondiciones, prioridad, tipo, tipoPruebaId, timestamp, timestamp);
     replacePasos(id, pasos);
     replaceEtiquetas(id, etiquetaIds);
   });
@@ -105,7 +104,7 @@ const create = ({ suiteId, titulo, descripcion = null, precondiciones = null, pr
   return findById(id);
 };
 
-const update = (id, fields, editadoPorId) => {
+const update = (id, fields) => {
   const current = findRawById(id);
   if (!current) return null;
   const titulo = fields.titulo ?? current.titulo;
@@ -125,7 +124,6 @@ const update = (id, fields, editadoPorId) => {
       tipo: current.tipo,
       tipoPruebaId: current.tipo_prueba_id,
       pasos: pasosDeCaso(id),
-      editadoPorId,
     });
     db.prepare(
       'UPDATE casos_prueba SET titulo = ?, descripcion = ?, precondiciones = ?, prioridad = ?, tipo = ?, tipo_prueba_id = ?, actualizado_en = ? WHERE id = ?'

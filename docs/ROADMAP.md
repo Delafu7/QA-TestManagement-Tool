@@ -12,13 +12,13 @@ The [docs/design/](design/) documents were written before implementation and are
 |---|---|---|---|
 | Dark mode | Marked `[verify]`/not implemented by default ([design §05](design/05-responsive-y-design-system.md) §5.2) | `client/src/styles/tokens.css` already defines a `[data-theme='dark']` token set and follows `prefers-color-scheme` automatically | Functionally further along than the design doc suggests, but there's no in-app manual toggle — it only follows OS preference. Decide if a manual toggle is wanted (§3). |
 
-**Closed:** role-based authorization (`requireRole`) was wired in across every mutating route in August 2026 — `gestor` is now server-side read-only except export, matching `[[04-ui-ux]]` §1. List pagination now matches the design contract exactly (`{ data, pagination: { page, pageSize, total } }`, defaults 1/20, max 100) on every flat list endpoint; the client auto-pages transparently so existing screens keep showing complete lists without their own pagination UI. See [docs/AUDIT.md](AUDIT.md) for the audit that flagged both and the fixes applied alongside them (an unauthenticated user-role-escalation hole, an FK crash on editing executed test cases, a silently-discarded `ciclo` block comment, and two more FK-crash bugs the new backend test suite turned up independently — deleting a caso or a suite could 500).
+**Superseded — single-user (2026-09-10):** the whole identity model was removed. No `usuarios` table, no `qa`/`gestor` roles, no `X-User-Id` header, no `requireRole`, no user-selection screen, and no attribution columns on any entity. The app now assumes one local operator with full access. This makes the earlier "wire up `requireRole` / permission matrix" work and the `04-ui-ux` §1 per-role view split obsolete. List pagination remains as designed (`{ data, pagination: { page, pageSize, total } }`, defaults 1/20, max 100) on every flat list endpoint, client auto-paging transparently. See [docs/AUDIT.md](AUDIT.md) for the older audit (its auth findings no longer apply).
 
 ## 2. Explicitly out of scope (carried over, still valid)
 
 From [design §08 §20](design/08-decisiones.md#20-fuera-de-alcance-explícito-de-esta-iteración) — these were deliberate exclusions for the first build, not omissions. Re-confirm each still holds before starting new work:
 
-- Real authentication (SSO, password login) or multi-tenancy.
+- Any authentication (SSO, password login), user accounts, roles, or multi-tenancy — the app is single-user by design (see §1).
 - AI-powered features of any kind.
 - Integrations beyond Notion (Jira, Slack, email...).
 - Offline mode or sync between separate installations.
@@ -34,7 +34,7 @@ Rough sizing: **S** = a few hours, **M** = a few days, **L** = a significant ite
 |---|---|---|
 | Frontend test suite | No component/interaction tests exist at all today | M |
 
-**Closed:** `requireRole`/permission matrix (see §1 note above); a real backend test suite — `npm test` now runs `server/test/*.test.js` (`node:test`, unit + integration) covering state-machine transitions, integrity rules, auth/role gating, and export logic (JSON/Markdown + a mocked Notion client), replacing the old two-endpoint smoke test; list pagination on every flat list endpoint (see §1 note above), with the client updated to auto-page transparently rather than silently truncating; basic rate limiting (`RATE_LIMIT_WINDOW_MS`/`RATE_LIMIT_MAX`, default 300 req/min per client IP) on all of `/api/*`; and automated backups for the SQLite volume — `scripts/backup.sh` takes a hot backup via `server/scripts/backup.js` (`better-sqlite3`'s online backup API), writes it to `./backups/` on the host (outside the `sqlite-data` volume), keeps the 7 most recent, and is meant to be scheduled with a daily host crontab entry (see [docs/DEPLOYMENT.md#backups](DEPLOYMENT.md#backups)). Offsite replication and one-click restore remain deliberately out of scope.
+**Closed:** identity model removed — the app is single-user (see §1 note above); a real backend test suite — `npm test` now runs `server/test/*.test.js` (`node:test`, unit + integration) covering state-machine transitions, integrity rules, and export logic (JSON/Markdown + a mocked Notion client), replacing the old two-endpoint smoke test; list pagination on every flat list endpoint (see §1 note above), with the client updated to auto-page transparently rather than silently truncating; basic rate limiting (`RATE_LIMIT_WINDOW_MS`/`RATE_LIMIT_MAX`, default 300 req/min per client IP) on all of `/api/*`; and automated backups for the SQLite volume — `scripts/backup.sh` takes a hot backup via `server/scripts/backup.js` (`better-sqlite3`'s online backup API), writes it to `./backups/` on the host (outside the `sqlite-data` volume), keeps the 7 most recent, and is meant to be scheduled with a daily host crontab entry (see [docs/DEPLOYMENT.md#backups](DEPLOYMENT.md#backups)). Offsite replication and one-click restore remain deliberately out of scope.
 
 ### Medium priority — clear product value, not yet designed
 
@@ -58,9 +58,9 @@ Rough sizing: **S** = a few hours, **M** = a few days, **L** = a significant ite
 | Custom fields on test cases/defects | Current schema is fixed; some teams want project-specific fields | L |
 | Additional integrations beyond Notion (Jira, Slack, email digests) | Explicitly out of scope for now (§2); revisit only if user demand is concrete | L |
 | Localization / multi-language UI | Domain language and UI copy are Spanish-only throughout; no i18n layer exists | L |
-| Real authentication (SSO/password login) | Out of scope by design (§2) — required before the app could ever be exposed outside a trusted network | L |
+| Multi-user support (auth, accounts, roles) | Removed by design (§1, §2). Would be a large re-introduction: a `usuarios` table, an auth mechanism, `requireRole`, attribution columns on every entity, and a per-role UI. Only revisit if the single-user assumption stops holding. | L |
 | Encryption at rest for SQLite | Out of scope by design (§2); would also block persisting the Notion token, which is a related open question below | M |
-| Migrate off SQLite to PostgreSQL | Only worth doing if `SQLITE_BUSY` write contention becomes a real problem with multiple concurrent QA writers on the same cycle (the documented trigger condition in [design §08 §19](design/08-decisiones.md#19-criterios-para-revisar-estas-decisiones-en-el-futuro)) | L |
+| Migrate off SQLite to PostgreSQL | Only worth doing if `SQLITE_BUSY` write contention becomes a real problem (unlikely with a single writer) | L |
 
 ## 4. Open product questions
 
@@ -69,8 +69,6 @@ Carried from [design §08 §14](design/08-decisiones.md#14-preguntas-abiertas-pe
 | Question | Blocks |
 |---|---|
 | Is CSV/Excel import of existing test cases needed? | Bulk import item above |
-| How many concurrent projects will a team realistically manage? | Whether the SQLite decision needs revisiting sooner rather than later |
-| Should Notion's `Ejecutor` property map to a real Notion `people` field instead of plain text, for teams that use Notion internally? | Any rework of the Notion export mapping |
 | Is dark mode needed from the next release, or can it stay OS-preference-only? | Manual theme toggle item above |
 | Should the Notion export token ever be persisted (with encryption), to remove the per-export re-entry friction? | Encryption-at-rest item above; currently accepted as a deliberate trade-off ([design §08 §6](design/08-decisiones.md#6-persistencia-del-token-de-notion)) |
 
